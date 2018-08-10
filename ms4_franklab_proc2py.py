@@ -218,7 +218,7 @@ def pyms_extract_segment(*,timeseries, timeseries_out, t1, t2, opts={}):
         opts
     )
 
-def pyms_anneal_segs(*,timeseries_list, firings_list, firings_out, dmatrix_out, k1_dmatrix_out, k2_dmatrix_out, dmatrix_templates_out, sample_offsets, opts={}):
+def pyms_anneal_segs(*,timeseries_list, firings_list, firings_out, dmatrix_out, k1_dmatrix_out, k2_dmatrix_out, dmatrix_templates_out, time_offsets, opts={}):
 
     return mlp.runProcess(
         'pyms.anneal_segments',
@@ -234,7 +234,7 @@ def pyms_anneal_segs(*,timeseries_list, firings_list, firings_out, dmatrix_out, 
             'dmatrix_templates_out':dmatrix_templates_out
         },
         {
-            'time_offsets':sample_offsets
+            'time_offsets':time_offsets
         },
         opts
     )

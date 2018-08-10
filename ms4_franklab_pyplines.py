@@ -135,6 +135,10 @@ def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,det
         timeseries_list.append(pre_outpath)
 
     firings_out_final=output_dir+'/firings_raw.mda'
+    # sample_offsets have to be converted into a string to be properly passed into the processor
+    str_sample_offsets=','.join(map(str,sample_offsets))
+    print(str_sample_offsets)
+    
     p2p.pyms_anneal_segs(
         timeseries_list=timeseries_list, 
         firings_list=firings_list,
@@ -143,7 +147,7 @@ def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,det
         k1_dmatrix_out=[],
         k2_dmatrix_out=[],
         dmatrix_templates_out=[],
-        sample_offsets=sample_offsets
+        time_offsets=str_sample_offsets
     )
     
     # clear the temp pre and firings files if specified
