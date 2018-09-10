@@ -1,4 +1,4 @@
-#!/usr/bin/env nodejs
+#!/usr/bin/env node
 
 /*
 
@@ -72,10 +72,10 @@ for (var dd in mda_directories) {
 	var animal = get_animal_from_directory_name(mda_directories[dd]);
 	var epoch=get_epoch_from_directory_name(input_directory);
 //	epoch = parseInt(epoch).toString(); // strip any zero padding
-	var output_directory_mountain=date+'_'+animal+'.mountain';  
+	var output_directory_mountain=directory + '/' + date+'_'+animal+'.mountain';  
 	var list=fs.readdirSync(input_directory);
 	var raw_fnames=[];
-//	console.log(date, animal)
+	console.log(date, animal)
 	mkdir_if_needed(output_directory_mountain); // make date_animal.mountain dir
 //	pipelines+=' --sessions='+epoch; // append current epoch string to pipeline session(epoch) list
 
@@ -84,14 +84,14 @@ for (var dd in mda_directories) {
 	output_directory_tet = output_directory_mountain+'/'+dsname; // for each <tet>.mda create a <tetdatasetprv> dir in parent dir
 	mkdir_if_needed(output_directory_tet);
 	var params0={samplerate:30000};
-	var exe='prv-create';
+	var exe='ml-prv-create';
 	var args=[input_directory+'/',output_directory_tet+'/raw.mda.prv'];
 	fs.writeFileSync(output_directory_tet+'/params.json',JSON.stringify(params0));
 	if (!(dsname in dsnames)){ //if a dataset.txt entry has not yet been created for this tetrode
 		datasets+=dsname+' '+dsname+'\n';// append tetrode to datasets.txt
 		}
 	dsnames[dsname]=true; //append tetrode name to set of tetrode names
-//	console.log(exe, args)
+	console.log(exe, args)
 	run_process_and_read_stdout(exe,args,function(txt) {
 		console.log(txt);
 		});

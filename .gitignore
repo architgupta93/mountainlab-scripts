@@ -1,0 +1,4 @@
+results/
+*__pycache__
+G02/
+*.ipynb_checkpoints*

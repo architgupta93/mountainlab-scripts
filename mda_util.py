@@ -1,18 +1,24 @@
 #! /home/droumis/anaconda3/bin/python3
 #run this from the preprocessing directory containing all dates' data
 
-def make_mda_ntrodeEpoch_links():
+def make_mda_ntrodeEpoch_links(filename=None):
     import os
     #for each date directory
-    for datedir in os.listdir('.'):
+    if filename is None:
+        filename = './'
+    print(os.listdir(filename))
+
+    for datedir in os.listdir(filename):
         date = datedir.split('_')[0]
+        print(date)
         #for each ep.mda directory
         for epdirmda in os.listdir('./'+date):
             if '.mda' in epdirmda:
-                #print(epdirmda)
+                print(epdirmda)
                 # for each nt.mda file
                 for eptetmda in os.listdir('./'+date+'/'+epdirmda):
                     if '.nt' in eptetmda:
+                        print(eptetmda)
                         an = eptetmda.split('_')[1]
                         endf = eptetmda.split('_')[-1]
                         ntr = endf.split('.')[1]
@@ -21,6 +27,9 @@ def make_mda_ntrodeEpoch_links():
                         mntdir = date + '_' + an + '.mnt'
                         ntdir = date+'_'+an+ '.'+ntr+'.mnt'
                         destlink = cwd+'/'+datedir+'/'+mntdir+'/'+ntdir+'/'+eptetmda
+                        print()
+                        print(srclink)
+                        print(destlink)
                         # print(srclink)
                         # print(destlink)
                         make_sure_path_exists(cwd+'/'+datedir+'/'+mntdir)

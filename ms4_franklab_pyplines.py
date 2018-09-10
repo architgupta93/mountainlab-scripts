@@ -18,6 +18,7 @@ def concat_eps(*,dataset_dir, mda_list,opts={}):
 
     with open(mda_list) as f:
         mdalist=json.load(f)
+    print(mdalist)
 
     strstart = []
     for entries in mdalist['files']:
