@@ -81,10 +81,14 @@ for (var dd in mda_directories) {
 
 	var dsname=input_directory.slice(0,input_directory.length-4);
 	dsname=dsname.slice(dsname.lastIndexOf('.')+1); // grab tetrode string from mda file > 'dsname'
+
+        console.log('Tetrode Name:', dsname)
 	output_directory_tet = output_directory_mountain+'/'+dsname; // for each <tet>.mda create a <tetdatasetprv> dir in parent dir
+        console.log('Output Directory: ', output_directory_tet)
+        console.log()
 	mkdir_if_needed(output_directory_tet);
 	var params0={samplerate:30000};
-	var exe='ml-prv-create';
+	var exe='ml-prv-create-index';
 	var args=[input_directory+'/',output_directory_tet+'/raw.mda.prv'];
 	fs.writeFileSync(output_directory_tet+'/params.json',JSON.stringify(params0));
 	if (!(dsname in dsnames)){ //if a dataset.txt entry has not yet been created for this tetrode

@@ -239,6 +239,27 @@ def pyms_anneal_segs(*,timeseries_list, firings_list, firings_out, dmatrix_out, 
         opts
     )
 
+def combine_firing_segs(*,timeseries_list, firings_list, firings_out, dmatrix_out, k1_dmatrix_out, k2_dmatrix_out, dmatrix_templates_out, time_offsets, opts={}):
+
+    return mlp.runProcess(
+        'ms3.combine_firing_segments',
+        {
+            'timeseries_list':timeseries_list,
+            'firings_list':firings_list
+        },
+        {
+            'firings_out':firings_out,
+            'dmatrix_out':dmatrix_out,
+            'k1_dmatrix_out':k1_dmatrix_out,
+            'k2_dmatrix_out':k2_dmatrix_out,
+            'dmatrix_templates_out':dmatrix_templates_out
+        },
+        {
+            'time_offsets':time_offsets
+        },
+        opts
+    )
+
 def clear_seg_files(*,timeseries_list, firings_list, opts={}):
     for file in timeseries_list:
         os.remove(file)

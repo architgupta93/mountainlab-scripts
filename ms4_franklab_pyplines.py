@@ -15,17 +15,22 @@ import math
 
 #before anything else, must concat all eps together becuase ms4 no longer handles the prv list of mdas
 def concat_eps(*,dataset_dir, mda_list,opts={}):
+    print('ConcatEps Function Called!')
 
     with open(mda_list) as f:
         mdalist=json.load(f)
+
+    print()
+    print("List of files:")
     print(mdalist)
+    print()
 
     strstart = []
     for entries in mdalist['files']:
         strstart.append('timeseries_list:'+entries['prv']['original_path'])
     
     joined = ' '.join(strstart)
-
+    
     outpath = 'timeseries_out:'+dataset_dir+'/raw.mda'
     subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs',joined,'--outputs',outpath])                    
     #somehow turn list of files into dictionary 
