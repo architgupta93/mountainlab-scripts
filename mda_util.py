@@ -1,44 +1,51 @@
-#! /home/droumis/anaconda3/bin/python3
+#!/usr/bin/python3
 #run this from the preprocessing directory containing all dates' data
+import os
+import sys
 
-def make_mda_ntrodeEpoch_links(filename=None):
-    import os
+MODULE_DENTIFIER = "[MDA Linker] "
+MDA_EXTENSION = '.mda'
+TETRODE_EXTENSION = '.nt'
+
+def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
     #for each date directory
-    if filename is None:
-        filename = './'
-    print(os.listdir(filename))
+    if len(dirnames) == 0:
+        print(MODULE_DENTIFIER + "Warning: Targets not specified. Looking under current directory")
+        dirnames = os.listdir('./')
+        if len(dirnames) == 0:
+            raise Exception("Could not find MDA files in current directory. Try specifying MDA location")
 
-    for datedir in os.listdir(filename):
-        date = datedir.split('_')[0]
-        print(date)
-        #for each ep.mda directory
-        for epdirmda in os.listdir('./'+date):
-            if '.mda' in epdirmda:
-                print(epdirmda)
-                # for each nt.mda file
-                for eptetmda in os.listdir('./'+date+'/'+epdirmda):
-                    if '.nt' in eptetmda:
-                        print(eptetmda)
-                        an = eptetmda.split('_')[1]
-                        endf = eptetmda.split('_')[-1]
-                        ntr = endf.split('.')[1]
-                        cwd = os.getcwd()
-                        srclink = cwd+'/'+datedir+'/'+epdirmda+'/'+eptetmda
-                        mntdir = date + '_' + an + '.mnt'
-                        ntdir = date+'_'+an+ '.'+ntr+'.mnt'
-                        destlink = cwd+'/'+datedir+'/'+mntdir+'/'+ntdir+'/'+eptetmda
-                        print()
-                        print(srclink)
-                        print(destlink)
-                        # print(srclink)
-                        # print(destlink)
-                        make_sure_path_exists(cwd+'/'+datedir+'/'+mntdir)
-                        make_sure_path_exists(cwd+'/'+datedir+'/'+mntdir+'/'+ntdir)
-                        removeNTfile(destlink) #to overwrite. remove ntlink if it already exists
-                        #create directory of sym links to original mda
-                        os.symlink(srclink, destlink)
-#        return
-
+    # TODO: Currently, code relies on the provision of absolute paths. Relative paths will not work.
+    if resdir is None:
+        resdir = os.getcwd() + '/softlinks'
+    for ep_idx, epdirmda in enumerate(dirnames):
+        try:
+            print(MODULE_DENTIFIER + "Found EPOCH " + epdirmda)
+            for eptetmda in os.listdir(epdirmda+'/'):
+                if '.nt' in eptetmda:
+                    # Get the tetrode index
+                    ntr = eptetmda.split('.')[1]
+                    print(MODULE_DENTIFIER + "Tetrode %d in file %s."%(int(ntr.strip(TETRODE_EXTENSION)), eptetmda))
+                    srclink = epdirmda+'/'+eptetmda
+                    mntdir = resdir + '.mnt'
+                    ntdir = resdir + '/' + ntr + '.mnt'
+                    destlink = ntdir + '/' + eptetmda
+                    print("Creating softlink...")
+                    print("Source: " + srclink)
+                    print("Destination: " + destlink)
+                    make_sure_path_exists(srclink)
+                    make_sure_path_exists(ntdir)
+                    removeNTfile(destlink) #to overwrite. remove ntlink if it already exists
+                    #create directory of sym links to original mda
+                    os.symlink(srclink, destlink)
+                else:
+                    print("Warning: Found file %s, which is not a tetrode!"%eptetmda)
+        except Exception as err:
+            print("Unable to complete softlink creation for epoch %s"%epdirmda)
+            print(err)
+        finally:
+            # TODO: Delete any softlinks that might have been made already at this point.
+            return
 def make_sure_path_exists(path):
     import os, errno
     try:
@@ -55,6 +62,17 @@ def removeNTfile(ntrode_filename):
         if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
             raise  # re-raise exception if a different error occurred
 
-#def createSymlink():
 if __name__ == "__main__":
-    make_mda_ntrodeEpoch_links()
+    # User can supply a list of mda files which all need to be combined for spike sorting.
+    dirnames = []
+    resname = None
+    try:
+        resname = sys.argv[1]
+        if len(sys.argv) > 2:
+            for dir_idx, dirname in enumerate(sys.argv[2:]):
+                dirnames.append(dirname)
+        make_mda_ntrodeEpoch_links(dirnames, resname)
+    except Exception as err:
+        print(MODULE_DENTIFIER + "Expecting source/destination directories")
+        print(MODULE_DENTIFIER + "Usage python mda_utils.py <target> <sources>")
+        print(err)
