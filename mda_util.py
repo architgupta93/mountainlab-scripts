@@ -3,14 +3,14 @@
 import os
 import sys
 
-MODULE_DENTIFIER = "[MDA Linker] "
+MODULE_IDENTIFIER = "[MDA Linker] "
 MDA_EXTENSION = '.mda'
 TETRODE_EXTENSION = '.nt'
 
 def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
     #for each date directory
     if len(dirnames) == 0:
-        print(MODULE_DENTIFIER + "Warning: Targets not specified. Looking under current directory")
+        print(MODULE_IDENTIFIER + "Warning: Targets not specified. Looking under current directory")
         dirnames = os.listdir('./')
         if len(dirnames) == 0:
             raise Exception("Could not find MDA files in current directory. Try specifying MDA location")
@@ -20,12 +20,12 @@ def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
         resdir = os.getcwd() + '/softlinks'
     for ep_idx, epdirmda in enumerate(dirnames):
         try:
-            print(MODULE_DENTIFIER + "Found EPOCH " + epdirmda)
+            print(MODULE_IDENTIFIER + "Found EPOCH " + epdirmda)
             for eptetmda in os.listdir(epdirmda+'/'):
                 if '.nt' in eptetmda:
                     # Get the tetrode index
                     ntr = eptetmda.split('.')[1]
-                    print(MODULE_DENTIFIER + "Tetrode %d in file %s."%(int(ntr.strip(TETRODE_EXTENSION)), eptetmda))
+                    print(MODULE_IDENTIFIER + "Tetrode %d in file %s."%(int(ntr.strip(TETRODE_EXTENSION)), eptetmda))
                     srclink = epdirmda+'/'+eptetmda
                     mntdir = resdir + '.mnt'
                     ntdir = resdir + '/' + ntr + '.mnt'
@@ -46,6 +46,7 @@ def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
         finally:
             # TODO: Delete any softlinks that might have been made already at this point.
             return
+
 def make_sure_path_exists(path):
     import os, errno
     try:
@@ -73,6 +74,6 @@ if __name__ == "__main__":
                 dirnames.append(dirname)
         make_mda_ntrodeEpoch_links(dirnames, resname)
     except Exception as err:
-        print(MODULE_DENTIFIER + "Expecting source/destination directories")
-        print(MODULE_DENTIFIER + "Usage python mda_utils.py <target> <sources>")
+        print(MODULE_IDENTIFIER + "Expecting source/destination directories")
+        print(MODULE_IDENTIFIER + "Usage python mda_utils.py <target> <sources>")
         print(err)
