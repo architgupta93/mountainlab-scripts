@@ -20,7 +20,8 @@ import subprocess
 def read_dataset_params(dsdir):
     params_fname=mlp.realizeFile(dsdir+'/params.json')
     if not os.path.exists(params_fname):
-        raise Exception('Dataset parameter file does not exist: '+params_fname)
+        return {'samplerate':30000.0}
+        # raise Exception('Dataset parameter file does not exist: '+params_fname)
     with open(params_fname) as f:
         return json.load(f)
     

@@ -27,8 +27,7 @@ def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
                     ntr = eptetmda.split('.')[1]
                     print(MODULE_IDENTIFIER + "Tetrode %d in file %s."%(int(ntr.strip(TETRODE_EXTENSION)), eptetmda))
                     srclink = epdirmda+'/'+eptetmda
-                    mntdir = resdir + '.mnt'
-                    ntdir = resdir + '/' + ntr + '.mnt'
+                    ntdir = resdir + '/' + ntr
                     destlink = ntdir + '/' + eptetmda
                     print("Creating softlink...")
                     print("Source: " + srclink)

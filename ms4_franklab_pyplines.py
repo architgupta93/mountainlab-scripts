@@ -15,15 +15,10 @@ import math
 
 #before anything else, must concat all eps together becuase ms4 no longer handles the prv list of mdas
 def concat_eps(*,dataset_dir, mda_list,opts={}):
-    print('ConcatEps Function Called!')
-
     with open(mda_list) as f:
         mdalist=json.load(f)
-
-    print()
-    print("List of files:")
+    print("File List:")
     print(mdalist)
-    print()
 
     strstart = []
     for entries in mdalist['files']:

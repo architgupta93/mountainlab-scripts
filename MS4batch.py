@@ -12,6 +12,9 @@ MODULE_IDENTIFIER = '[MS4Pipeline] '
 MDA_UTIL_FILENAME = 'mda_util.py'
 PYTHON_EXECUTABLE = 'python3'
 PRV_CREAION_EXE   = 'ml-prv-create-index'
+RAW_DIR_NAME      = '/raw' 
+MOUNTAIN_DIR_NAME = '/mountain' 
+ML_PRV_CREATOR    = 'ml-prv-create'
 
 def setup_NT_links(working_dir):
     """
@@ -36,12 +39,19 @@ def setup_NT_links(working_dir):
     """
 
     # TODO: Implement this function when we are working with multiple epochs.
-    mda_util.make_sure_path_exists(working_dir+'mountain')
-    raw_data_dir = working_dir + '/raw'
+    mnt_data_dir = working_dir + MOUNTAIN_DIR_NAME
+    raw_data_dir = working_dir + RAW_DIR_NAME
+    mda_util.make_sure_path_exists(mnt_data_dir)
     for tet_dir in os.listdir(raw_data_dir):
-        # subprocess.call([PRV_CREAION_EXE, tet_dir, raw_data_dir])
-    pass
-
+        destlink = mnt_data_dir + '/' + tet_dir
+        srclink  = raw_data_dir + '/' + tet_dir
+        mda_util.make_sure_path_exists(destlink)
+        print("Linking " + tet_dir)
+        for mda_file in os.listdir(srclink):
+            mda_file_path = srclink + '/' + mda_file
+            mda_file_name = mda_file.strip('.mda')
+            output_file_path = destlink + '/' +  'raw.mda.prv'
+            subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
 
 def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
     # Get the path for this file -> And then the directory in which this file
@@ -54,8 +64,8 @@ def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
     if animal_name is None:
         animal_name = input("Input Name/ID for the animal... ")
 
-    mnt_path = results_dir + '.mnt/'
-    raw_mnt_path = mnt_path + 'raw'
+    mnt_path = results_dir + '.mnt'
+    raw_mnt_path = mnt_path + '/raw'
     print('Processing ' + source_dir)
     try:
         if not os.path.exists(mnt_path):
@@ -68,7 +78,7 @@ def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
 
     print('MDA Util Ran successfully')
     mountain_src_path = mnt_path + '/mountain'
-    mountain_res_path = results_dir + '/preprocessing/' + '.mountain'
+    mountain_res_path = results_dir + '/preprocessing/mountain'
     
     print('Source ' + mountain_src_path)
     print('Destination ' + mountain_res_path)
@@ -87,22 +97,35 @@ def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
     else:
         print(mountain_res_path + ' Exists!')
 
-    nt_ind = 0
-    nt = 2
-    nt_src_dir = mountain_src_path+'/nt'+str(nt)
-    nt_out_dir = mountain_res_path+'/nt'+str(nt)
-    
-    # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
-    # save this to the output dir; it serves as src for subsequent steps
-    prv_list=nt_src_dir+'/raw.mda.prv'
-    print('Calling concat_eps')
-    print()
-    pyp.concat_eps(dataset_dir=nt_out_dir, mda_list=prv_list)
-    
-    # preprocessing: filter, mask out artifacts, whiten
-    # TODO make optional whether you save the interediates (filt, pre)
-    pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
-    
+    for nt in range(18,20):
+        nt_src_dir = mountain_src_path+'/nt'+str(nt)
+        nt_out_dir = mountain_res_path+'/nt'+str(nt)
+        
+        # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
+        # save this to the output dir; it serves as src for subsequent steps
+        prv_list=nt_src_dir+'/raw.mda.prv'
+        print('Concatenating Epochs')
+        # pyp.concat_eps(dataset_dir=nt_out_dir, mda_list=prv_list)
+        
+        # HACK: For the time being, just use single tetrodes.
+        nt_out_dir = nt_src_dir
+        # preprocessing: filter, mask out artifacts, whiten
+        # TODO make optional whether you save the interediates (filt, pre)
+        pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
+        
+        # Run sort on a single data
+        pre_outpath=nt_out_dir+'/pre'+'.mda'
+        firings_outpath=nt_out_dir+'/firings'+'.mda'
+        p2p.ms4alg(
+            timeseries=pre_outpath,
+            firings_out=firings_outpath,
+            geom=[],
+            detect_sign=0,
+            adjacency_radius=-1,
+            detect_threshold=5,
+            opts={})
+    return
+
     #run the actual sort 
     pyp.ms4_sort_on_segs(dataset_dir=nt_out_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
     nt_dir = mountain_path+'/nt'+str(nt)
