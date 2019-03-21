@@ -18,5 +18,5 @@ def parse_commandline_arguments():
     parser.add_argument('--data-dir', metavar='<[MDA] data-directory>', help='Data directory from which MDA files should be read.')
     parser.add_argument('--output-dir', metavar='<output-directory>', help='Output directory where sorted spike data should be stored')
     args = parser.parse_args()
-    print(args)
+    # print(args)
     return args

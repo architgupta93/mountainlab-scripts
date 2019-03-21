@@ -49,23 +49,21 @@ def setup_NT_links(working_dir):
         srclink  = raw_data_dir + '/' + tet_dir
         mda_util.make_sure_path_exists(destlink)
         print("Linking " + tet_dir)
-        for mda_file in os.listdir(srclink):
+        for mda_idx, mda_file in enumerate(os.listdir(srclink)):
             mda_file_path = srclink + '/' + mda_file
             mda_file_name = mda_file.strip('.mda')
-            output_file_path = destlink + '/' +  'raw.mda.prv'
+            output_file_path = destlink + '/' + mda_file_name + '.raw.mda.prv'
             subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
 
-def run_pipeline(source_dirs, results_dir=None):
+def run_pipeline(source_dirs, results_dir):
     # Get the path for this file -> And then the directory in which this file
     # is located. We do expect mda_utils to be in the same location as this
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     mda_util_path = current_file_dir + '/' + MDA_UTIL_FILENAME
-    if results_dir is None: 
-        results_dir= current_file_dir + '/' + 'results/'
-
     mnt_path = results_dir + '.mnt'
     raw_mnt_path = mnt_path + '/raw'
     print('Processing ' + ', '.join(source_dirs))
+
     try:
         if not os.path.exists(mnt_path):
             print('No mnt directory found; Calling mda_util')
@@ -77,7 +75,7 @@ def run_pipeline(source_dirs, results_dir=None):
 
     print('MDA Util Ran successfully')
     mountain_src_path = mnt_path + '/mountain'
-    mountain_res_path = results_dir + '/preprocessing/mountain'
+    mountain_res_path = mnt_path + '/preprocessing'
     
     print('Source ' + mountain_src_path)
     print('Destination ' + mountain_res_path)
@@ -102,37 +100,18 @@ def run_pipeline(source_dirs, results_dir=None):
         
         # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
         # save this to the output dir; it serves as src for subsequent steps
-        prv_list=nt_src_dir+'/raw.mda.prv'
-        print('Concatenating Epochs')
-        # pyp.concat_eps(dataset_dir=nt_out_dir, mda_list=prv_list)
+        prv_list=os.listdir(nt_src_dir)
+        print('Concatenating Epochs: ' + ', '.join(prv_list))
+        pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
         
-        # HACK: For the time being, just use single tetrodes.
-        nt_out_dir = nt_src_dir
         # preprocessing: filter, mask out artifacts, whiten
-        # TODO make optional whether you save the interediates (filt, pre)
         pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
         
-        # Run sort on a single data
-        pre_outpath=nt_out_dir+'/pre'+'.mda'
-        firings_outpath=nt_out_dir+'/firings'+'.mda'
-        p2p.ms4alg(
-            timeseries=pre_outpath,
-            firings_out=firings_outpath,
-            geom=[],
-            detect_sign=0,
-            adjacency_radius=-1,
-            detect_threshold=5,
-            opts={})
-        pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
-        pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
-
-    return
-
-    #run the actual sort 
-    pyp.ms4_sort_on_segs(dataset_dir=nt_out_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
-    nt_dir = mountain_path+'/nt'+str(nt)
-    pyp.add_curation_tags(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
-    pyp.extract_marks(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
+        #run the actual sort 
+        pyp.ms4_sort_on_segs(dataset_dir=nt_out_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+        nt_dir = mountain_path+'/nt'+str(nt)
+        pyp.add_curation_tags(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
+        pyp.extract_marks(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
 
 if __name__ == "__main__":
 

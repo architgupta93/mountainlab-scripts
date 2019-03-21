@@ -20,7 +20,7 @@ def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
         resdir = os.getcwd() + '/softlinks'
 
     for ep_idx, epdirmda in enumerate(dirnames):
-        print("Epoch %d. MDA File: %s"%(ep_idx, epdirmda))
+        print(MODULE_IDENTIFIER + "Epoch %d. MDA File: %s"%(ep_idx, epdirmda))
         try:
             print(MODULE_IDENTIFIER + "Found EPOCH " + epdirmda)
             for eptetmda in os.listdir(epdirmda+'/'):
@@ -46,7 +46,7 @@ def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
             print(err)
         finally:
             # TODO: Delete any softlinks that might have been made already at this point.
-            return
+            pass
 
 def make_sure_path_exists(path):
     import os, errno
