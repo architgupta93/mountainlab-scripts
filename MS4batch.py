@@ -2,11 +2,13 @@ import os
 import sys
 import logging
 import subprocess
+import commandline
 import mda_util
 import ms4_franklab_pyplines as pyp
 import pyff_utils as pyff
 import ms4_franklab_proc2py as p2p
 from distutils.dir_util import copy_tree
+from tkinter import Tk, filedialog
 
 MODULE_IDENTIFIER = '[MS4Pipeline] '
 MDA_UTIL_FILENAME = 'mda_util.py'
@@ -53,7 +55,7 @@ def setup_NT_links(working_dir):
             output_file_path = destlink + '/' +  'raw.mda.prv'
             subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
 
-def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
+def run_pipeline(source_dirs, results_dir=None):
     # Get the path for this file -> And then the directory in which this file
     # is located. We do expect mda_utils to be in the same location as this
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -61,17 +63,14 @@ def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
     if results_dir is None: 
         results_dir= current_file_dir + '/' + 'results/'
 
-    if animal_name is None:
-        animal_name = input("Input Name/ID for the animal... ")
-
     mnt_path = results_dir + '.mnt'
     raw_mnt_path = mnt_path + '/raw'
-    print('Processing ' + source_dir)
+    print('Processing ' + ', '.join(source_dirs))
     try:
         if not os.path.exists(mnt_path):
             print('No mnt directory found; Calling mda_util')
-            mda_util.make_mda_ntrodeEpoch_links([source_dir], raw_mnt_path)
-    except Exception as err:
+            mda_util.make_mda_ntrodeEpoch_links(source_dirs, raw_mnt_path)
+    except (FileNotFoundError, IOError) as err:
         print("MDA Utils failed to run. Cannot create appropriate softlinks. Aborting!")
         print(err)
         return
@@ -124,6 +123,9 @@ def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
             adjacency_radius=-1,
             detect_threshold=5,
             opts={})
+        pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+        pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+
     return
 
     #run the actual sort 
@@ -133,13 +135,34 @@ def run_franklab_pipeline(source_dir, results_dir=None, animal_name=None):
     pyp.extract_marks(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
 
 if __name__ == "__main__":
-    dirnames = []
-    resname = None
-    try:
-        result_dir = sys.argv[1]
-        source_dir = sys.argv[2]
-        run_franklab_pipeline(source_dir, result_dir)
-    except Exception as err:
-        print(MODULE_DENTIFIER + "Expecting source/destination directories")
-        print(MODULE_DENTIFIER + "Usage python MS4batch.py <target> <sources>")
-        print(err)
+
+    commandline_args = commandline.parse_commandline_arguments()
+    if not commandline_args.output_dir:
+        print(MODULE_IDENTIFIER + "Using working directory for storing sorted spikes and softlinks.")
+        commandline_args.output_dir = os.getcwd() + '/' + commandline_args.animal + str(commandline_args.date)
+
+    # Get source directories using file dialogs.
+    gui_root = Tk()
+    gui_root.wm_withdraw()
+    mda_list = []
+    """
+    # NOTE: This does not work because top-level MDA files end up being directories
+    filenames = filedialog.askopenfilenames(initialdir=os.getcwd(), title="Select MDA Files", \
+            filetypes=(("MDA files", ".mda"), ("All Files", "*.*")))
+    """
+    if commandline_args.data_dir:
+        initial_directory = commandline_args.data_dir
+    else:
+        print("Using root directory as start-point for MDA search.")
+        initial_directory = '/'
+
+    while True:
+        new_mda_dir = filedialog.askdirectory(initialdir=initial_directory, \
+                title="Select MDA Files")
+        if not new_mda_dir:
+            break
+        mda_list.append(new_mda_dir)
+        print("Added %s."%new_mda_dir)
+    gui_root.destroy()
+
+    run_pipeline(mda_list, commandline_args.output_dir)

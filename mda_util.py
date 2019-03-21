@@ -9,16 +9,18 @@ TETRODE_EXTENSION = '.nt'
 
 def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
     #for each date directory
-    if len(dirnames) == 0:
+    if not dirnames:
         print(MODULE_IDENTIFIER + "Warning: Targets not specified. Looking under current directory")
-        dirnames = os.listdir('./')
-        if len(dirnames) == 0:
+        dirnames = os.listdir('./*.mda')
+        if not dirnames:
             raise Exception("Could not find MDA files in current directory. Try specifying MDA location")
 
     # TODO: Currently, code relies on the provision of absolute paths. Relative paths will not work.
     if resdir is None:
         resdir = os.getcwd() + '/softlinks'
+
     for ep_idx, epdirmda in enumerate(dirnames):
+        print("Epoch %d. MDA File: %s"%(ep_idx, epdirmda))
         try:
             print(MODULE_IDENTIFIER + "Found EPOCH " + epdirmda)
             for eptetmda in os.listdir(epdirmda+'/'):

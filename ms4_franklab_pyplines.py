@@ -14,7 +14,7 @@ import math
 # AKGillespie based on code from JMagland 
 
 #before anything else, must concat all eps together becuase ms4 no longer handles the prv list of mdas
-def concat_eps(*,dataset_dir, mda_list,opts={}):
+def concat_eps(*,dataset_dir, mda_list, opts={}):
     with open(mda_list) as f:
         mdalist=json.load(f)
     print("File List:")
@@ -27,7 +27,7 @@ def concat_eps(*,dataset_dir, mda_list,opts={}):
     joined = ' '.join(strstart)
     
     outpath = 'timeseries_out:'+dataset_dir+'/raw.mda'
-    subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs',joined,'--outputs',outpath])                    
+    subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs', joined,'--outputs',outpath])                    
     #somehow turn list of files into dictionary 
 
 
