@@ -180,16 +180,17 @@ def tagged_curation(*,cluster_metrics,metrics_tagged,firing_rate_thresh=.01, iso
 
 def get_epoch_offsets(*,dataset_dir, opts={}):
 
-    prv_list = dataset_dir + '/raw.mda.prv'
-    
-    with open(prv_list, 'r') as f:
-        ep_files = json.load(f)
+    prv_list = os.listdir(dataset_dir)
+    ep_files = []
+    for prv_file in prv_list:
+        with open(dataset_dir + '/' + prv_file, 'r') as f:
+            ep_files.append(json.load(f))
 
     # initialize with 0 (first start time)
     lengths = [0]
 
-    for idx in range(len(ep_files['files'])):
-        ep_path=ep_files['files'][idx]['prv']['original_path']
+    for idx, ep_desc in enumerate(ep_files):
+        ep_path=ep_desc['original_path']
         ep_mda=mdaio.DiskReadMda(ep_path)
         #get length of the mda (N dimension)
         samplength = ep_mda.N2()
@@ -280,7 +281,6 @@ def pyms_extract_clips(*,timeseries,firings, clips_out,clip_size,opts={}):
         {
             'clips_out':clips_out
         },
-        pp,
         opts
     )
 def synthesize_sample_dataset(*,dataset_dir,samplerate=30000,duration=600,num_channels=4,opts={}):

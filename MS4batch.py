@@ -84,19 +84,15 @@ def run_pipeline(source_dirs, results_dir):
         setup_NT_links(mnt_path)
     print('Finished creating NT Links')
     if not os.path.exists(mountain_res_path):
-        try:
-            print('Copying Mountain dir to Results dir')
-            copy_tree(mountain_src_path, mountain_res_path)
-        except Exception as err:
-            print("Unable to copy directory tree...")
-            print(err)
-            return
+        os.mkdir(mountain_res_path)
     else:
-        print(mountain_res_path + ' Exists!')
+        print(MODULE_IDENTIFIER + mountain_res_path + ' Exists!')
 
-    for nt in range(18,20):
+    tetrode_list = [2,3,5,9,16,17,18,19,20,21,22,23,24,25,26,27,31,33,34]
+    for nt in tetrode_list:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
+        mda_util.make_sure_path_exists(nt_out_dir)
         
         # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
         # save this to the output dir; it serves as src for subsequent steps
@@ -108,13 +104,11 @@ def run_pipeline(source_dirs, results_dir):
         pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
         
         #run the actual sort 
-        pyp.ms4_sort_on_segs(dataset_dir=nt_out_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
-        nt_dir = mountain_path+'/nt'+str(nt)
-        pyp.add_curation_tags(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
-        pyp.extract_marks(dataset_dir=nt_dir,output_dir=nt_dir,opts={})
+        pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+        pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+        pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
 
 if __name__ == "__main__":
-
     commandline_args = commandline.parse_commandline_arguments()
     if not commandline_args.output_dir:
         print(MODULE_IDENTIFIER + "Using working directory for storing sorted spikes and softlinks.")

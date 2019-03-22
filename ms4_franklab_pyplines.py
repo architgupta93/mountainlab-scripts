@@ -26,8 +26,11 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
             raise err
     joined = ' '.join(strstart)
     
-    outpath = 'timeseries_out:'+output_dir+'/raw.mda'
-    subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs', joined,'--outputs',outpath])                    
+    concatenated_mda_filename = output_dir+'/raw.mda'
+    outpath = 'timeseries_out:' + concatenated_mda_filename
+    subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs', joined,'--outputs',outpath])
+    subprocess.call(['ml-prv-create', concatenated_mda_filename, concatenated_mda_filename + '.prv'])                    
+
 def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_artifacts=1,opts={}):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -89,7 +92,7 @@ def ms4_sort_full(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect
     
 
 # segs = sort by timesegments, then join any matching  clusters
-def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect_threshold=3,detect_sign=0,rm_segment_intermediates=1, opts={}):
+def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect_threshold=3,detect_sign=0,rm_segment_intermediates=False, opts={}):
 
     # Fetch dataset parameters
     ds_params=p2p.read_dataset_params(dataset_dir)
@@ -110,7 +113,7 @@ def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,det
         segment_duration = t2-t1
         print('Segment '+str(segind+1)+': t1='+str(t1)+', t2='+str(t2)+', t1_min='+str(t1/ds_params['samplerate']/60)+', t2_min='+str(t2/ds_params['samplerate']/60));
 
-        pre_outpath= dataset_dir+'/pre-'+str(segind+1)+'.mda'
+        pre_outpath= output_dir+'/pre-'+str(segind+1)+'.mda'
         p2p.pyms_extract_segment(
             timeseries=output_dir+'/pre.mda.prv', 
             timeseries_out=pre_outpath, 
@@ -118,7 +121,7 @@ def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,det
             t2=t2,
             opts=opts)
 
-        firings_outpath=dataset_dir+'/firings-'+str(segind+1)+'.mda'
+        firings_outpath=output_dir+'/firings-'+str(segind+1)+'.mda'
         p2p.ms4alg(
             timeseries=pre_outpath,
             firings_out=firings_outpath,
@@ -170,7 +173,7 @@ def add_curation_tags(*, dataset_dir, output_dir, opts={}):
 
     p2p.tagged_curation(
         cluster_metrics=dataset_dir+'/metrics_raw.json',
-        metrics_tagged=output_dir+'/metrics_raw.json',
+        metrics_tagged=output_dir+'/metrics_tagged.json',
         firing_rate_thresh=.01, 
         isolation_thresh=.95, 
         noise_overlap_thresh=.03, 
@@ -188,11 +191,11 @@ def extract_clips(*,dataset_dir, output_dir, clip_size):
         clip_size=clip_size,
         opts=opts)
 
-def extract_marks(*,dataset_dir, output_dir):
+def extract_marks(*,dataset_dir, output_dir, opts={}):
 
     p2p.pyms_extract_clips(
         timeseries=dataset_dir+'/pre.mda.prv',
         firings=dataset_dir+'/firings_raw.mda',
-        clips_out=output_dur+'/marks.mda',
+        clips_out=output_dir+'/marks.mda',
         clip_size=1,
         opts=opts)
