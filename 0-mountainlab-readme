@@ -5,12 +5,13 @@ Instructions for setting up MountainLab (with trodes)
             $ conda activate mountainlab
 
 2. Install mountain lab, its processors and visualization tools
-            $ conda install -c flatiron -c conda-forge mountainlab mountainlab_pytools
+            $ conda install -c flatiron -c conda-forge mountainlab montainsort mountainlab_pytools
             $ conda install -c flatiron -c conda-forge ml_ephys
-            $ conda install -c flatiron -c conda-forge qt-mountainview
+            $ conda install -c flatiron -c conda-forge qt-mountainview ephys-viz
 
 2b. Install helper functions and other algorithms
-            $ conda install -c flatiron -c conda-forge ml_ms4alg
+            $ conda install -c flatiron -c conda-forge ml_ms3
+            $ conda install -c flatiron -c conda-forge ml_pyms
             $ conda install -c flatiron -c conda-forge ml_ms4alg
 The github page says that qt-mountainview is a temporary solution while they develop ephys-viz (In case stuff stops working in the future).
 

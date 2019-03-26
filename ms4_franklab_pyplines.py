@@ -28,6 +28,7 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
     
     concatenated_mda_filename = output_dir+'/raw.mda'
     outpath = 'timeseries_out:' + concatenated_mda_filename
+
     subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs', joined,'--outputs',outpath])
     subprocess.call(['ml-prv-create', concatenated_mda_filename, concatenated_mda_filename + '.prv'])                    
 

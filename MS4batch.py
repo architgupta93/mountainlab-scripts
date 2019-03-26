@@ -1,13 +1,15 @@
 import os
 import sys
+import json
 import logging
+import shutil
 import subprocess
 import commandline
 import mda_util
 import ms4_franklab_pyplines as pyp
-import pyff_utils as pyff
 import ms4_franklab_proc2py as p2p
 from distutils.dir_util import copy_tree
+from shutil import move
 from tkinter import Tk, filedialog
 
 MODULE_IDENTIFIER = '[MS4Pipeline] '
@@ -17,6 +19,23 @@ PRV_CREAION_EXE   = 'ml-prv-create-index'
 RAW_DIR_NAME      = '/raw' 
 MOUNTAIN_DIR_NAME = '/mountain' 
 ML_PRV_CREATOR    = 'ml-prv-create'
+ML_TMP_DIR        = '/tmp/mountainlab-tmp'
+
+def relocate_mda(prv_file, target_directory):
+    """
+    Look at a PRV file, identify the MDA location and move it to the specified
+    target location.
+    """
+    try:
+        with open(prv_file) as f:
+            prv_data = json.load(f)
+        mda_path = prv_data['original_path']
+        raw_filename = mda_path.split('/')[-1]
+        print('Copying MDA from %s.'%mda_path)
+        shutil.move(mda_path, target_directory + '/' + raw_filename)
+    except (FileNotFoundError, IOError) as err:
+        print('Unable to copy original MDA to output directory.')
+        print(err)
 
 def setup_NT_links(working_dir):
     """
@@ -88,7 +107,15 @@ def run_pipeline(source_dirs, results_dir):
     else:
         print(MODULE_IDENTIFIER + mountain_res_path + ' Exists!')
 
-    tetrode_list = [2,3,5,9,16,17,18,19,20,21,22,23,24,25,26,27,31,33,34]
+    # Create a timeseries directory for storing all the timeseries data generated
+    mountainlab_tmp_path = mnt_path + '/mountainlab-tmp'
+    if not os.path.exists(mountainlab_tmp_path):
+        os.mkdir(mountainlab_tmp_path)
+    templates_directory = mountainlab_tmp_path + '/tmp_long_term'
+    if not os.path.exists(templates_directory):
+        os.mkdir(templates_directory)
+
+    tetrode_list = range(1,2)
     for nt in tetrode_list:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
@@ -107,6 +134,17 @@ def run_pipeline(source_dirs, results_dir):
         pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
         pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
         pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+
+        # After running this for a single tetrode, we probably fill up the /tmp
+        # directory. We should clean it up and move all the contents to the
+        # output directory so that they can be used later on.
+
+        # filt, pre files
+        relocate_mda(nt_out_dir + '/' + 'filt.mda.prv', mountainlab_tmp_path)
+        relocate_mda(nt_out_dir + '/' + 'pre.mda.prv', mountainlab_tmp_path)
+
+        # .tmp files
+        copy_tree(ML_TMP_DIR + '/tmp_long_term', templates_directory)
 
 if __name__ == "__main__":
     commandline_args = commandline.parse_commandline_arguments()
