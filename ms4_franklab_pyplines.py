@@ -218,3 +218,22 @@ def extract_marks(*,dataset_dir, output_dir, opts={}):
         clips_out=output_dir+'/marks.mda',
         clip_size=1,
         opts=opts)
+
+def generate_templates(*,dataset_dir,output_dir,opts={}):
+    try:
+        # Read the MDA file for the filtered+whitened data
+        with open(dataset_dir+'/pre.mda.prv', 'r') as f:
+            prv_file = json.load(f)
+        timeseries_mda = prv_file['original_path']
+    except (FileNotFoundError, IOError) as err:
+        print('Unable to read PRE file for timeseries.')
+        timeseries_mda = None
+
+    p2p.generate_templates(
+        firings=dataset_dir+'/firings_raw.mda',
+        timeseries=timeseries_mda,
+        stdevs_out=output_dir+'/templates_stdev.out',
+        templates_out=output_dir+'/templates.out',
+        firings_out=output_dir+'/amplitudes.out',
+        opts=opts
+        )

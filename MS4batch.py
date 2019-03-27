@@ -8,7 +8,7 @@ import commandline
 import mda_util
 import ms4_franklab_pyplines as pyp
 import ms4_franklab_proc2py as p2p
-From distutils.dir_util import copy_tree
+from distutils.dir_util import copy_tree
 from shutil import move
 from tkinter import Tk, filedialog
 
@@ -117,7 +117,7 @@ def run_pipeline(source_dirs, results_dir):
     if not os.path.exists(templates_directory):
         os.mkdir(templates_directory)
 
-    tetrode_list = range(35,38)
+    tetrode_list = range(3,4)
     for nt in tetrode_list:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
@@ -158,6 +158,7 @@ def run_pipeline(source_dirs, results_dir):
             print(MODULE_IDENTIFIER + "Clips file with concatenated epochs found. Using file!")
 
         # Generate templates for MountainView
+        pyp.generate_templates(dataset_dir=nt_out_dir, output_dir=nt_out_dir, opts={})
 
 
 if __name__ == "__main__":

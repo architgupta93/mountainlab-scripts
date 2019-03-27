@@ -335,4 +335,32 @@ def synthesize_sample_dataset(*,dataset_dir,samplerate=30000,duration=600,num_ch
     with open(dataset_dir+'/params.json', 'w') as outfile:
         json.dump(params, outfile, indent=4)
 
-
+def generate_templates(*, firings, timeseries, stdevs_out, templates_out, firings_out, clip_size=100, opts={}):
+    mlp.runProcess(
+        'mv.mv_compute_templates',
+        {
+            'firings':firings,
+            'timeseries':timeseries
+        },
+        {
+            'stdevs_out':stdevs_out,
+            'templates_out':templates_out
+        },{
+            'clip_size':clip_size
+        },
+        opts
+    )
+    """
+    mlp.runProcess(
+        'mv.mv_compute_amplitudes',
+        {
+            'firings':firings,
+            'timeseries':timeseries
+        },
+        {
+            'firings_out':firings_out,
+        },{
+        },
+        opts
+    )
+    """
