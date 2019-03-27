@@ -17,6 +17,8 @@ CONCATENATED_EPOCHS_FILE = '/raw.mda'
 FILT_FILENAME = '/filt.mda.prv'
 RAW_METRICS_FILE = '/metrics_raw.json'
 TAGGED_METRICS_FILE = '/metrics_tagged.json'
+TEMPLATES_FILE = '/templates.out'
+TEMPLATE_STDS_FILE = '/templates_stdev.out'
 CLIPS_FILE = '/marks.mda'
 FIRINGS_FILENAME = '/firings_raw.mda'
 PRE_FILENAME = '/pre.mda.prv'
@@ -48,7 +50,7 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
             json.dump(params, fp)
         os.symlink(output_dir + PARAMS_FILENAME, dataset_dir + PARAMS_FILENAME)
     except IOError as err:
-        print('Unable to write parameter file.')
+        print('ERROR: Unable to write parameter file.')
 
 def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_artifacts=1,opts={}):
     if not os.path.exists(output_dir):
@@ -150,6 +152,15 @@ def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,det
             detect_threshold=detect_threshold,
             opts=opts)
 
+        # Compute cluster metrics
+        p2p.compute_cluster_metrics(
+            timeseries=output_dir+'/pre-'+str(segind+1)+'.mda',
+            firings=output_dir+'/firings-'+str(segind+1)+'.mda',
+            metrics_out=output_dir+'/metrics_raw_'+str(segind+1)+'.json',
+            samplerate=ds_params['samplerate'],
+            opts=opts
+        )
+
         firings_list.append(firings_outpath)
         timeseries_list.append(pre_outpath)
 
@@ -186,18 +197,27 @@ def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,det
     )
     
 
-def add_curation_tags(*, dataset_dir, output_dir, opts={}):
+def add_curation_tags(*, dataset_dir, output_dir, hand_curation=False, opts={}):
     # note that this is split out and not included after metrics calculation
     # because of a bug in ms3.combine_cluster_metrics - doesn't work if anything follows it
 
+    if hand_curation:
+        raw_metrics_file = dataset_dir+'/hand_curated.json'
+        tagged_metrics_file = output_dir+'/metrics_curated.json'
+        curated_mv2_file = dataset_dir+'/hand_curated.mv2'
+    else:
+        raw_metrics_file = dataset_dir+'/metrics_raw.json'
+        tagged_metrics_file = output_dir+'/metrics_tagged.json'
+        curated_mv2_file = []
+
     p2p.tagged_curation(
-        cluster_metrics=dataset_dir+'/metrics_raw.json',
-        metrics_tagged=output_dir+'/metrics_tagged.json',
+        cluster_metrics=raw_metrics_file,
+        metrics_tagged=tagged_metrics_file,
         firing_rate_thresh=.01, 
         isolation_thresh=.95, 
         noise_overlap_thresh=.03, 
         peak_snr_thresh=1.5, 
-        mv2file=[],
+        mv2file=curated_mv2_file,
         opts=opts
     ) 
 
@@ -232,8 +252,8 @@ def generate_templates(*,dataset_dir,output_dir,opts={}):
     p2p.generate_templates(
         firings=dataset_dir+'/firings_raw.mda',
         timeseries=timeseries_mda,
-        stdevs_out=output_dir+'/templates_stdev.out',
-        templates_out=output_dir+'/templates.out',
+        stdevs_out=output_dir+TEMPLATE_STDS_FILE,
+        templates_out=output_dir+TEMPLATES_FILE,
         firings_out=output_dir+'/amplitudes.out',
         opts=opts
         )

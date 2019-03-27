@@ -117,7 +117,7 @@ def run_pipeline(source_dirs, results_dir):
     if not os.path.exists(templates_directory):
         os.mkdir(templates_directory)
 
-    tetrode_list = range(3,4)
+    tetrode_list = range(1,41)
     for nt in tetrode_list:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
@@ -134,10 +134,10 @@ def run_pipeline(source_dirs, results_dir):
             print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
         
         # preprocessing: filter, mask out artifacts, whiten
+        move_filt_pre_files = False
         if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
             pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
-            relocate_mda(nt_out_dir + '/' + 'filt.mda.prv', mountainlab_tmp_path)
-            relocate_mda(nt_out_dir + '/' + 'pre.mda.prv', mountainlab_tmp_path)
+            move_filt_pre_files = True
         else:
             print(MODULE_IDENTIFIER + "Filt file with concatenated epochs found. Using file!")
         
@@ -158,8 +158,17 @@ def run_pipeline(source_dirs, results_dir):
             print(MODULE_IDENTIFIER + "Clips file with concatenated epochs found. Using file!")
 
         # Generate templates for MountainView
-        pyp.generate_templates(dataset_dir=nt_out_dir, output_dir=nt_out_dir, opts={})
+        if not (os.path.isfile(nt_out_dir + pyp.TEMPLATES_FILE) and os.path.isfile(nt_out_dir + pyp.TEMPLATE_STDS_FILE)):
+            pyp.generate_templates(dataset_dir=nt_out_dir, output_dir=nt_out_dir, opts={})
+        else:
+            print(MODULE_IDENTIFIER + "Templates file found. Using file!")
 
+        if (os.path.isfile(nt_out_dir + '/hand_curated.json')):
+            pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir, hand_curation=True)
+
+        if move_filt_pre_files:
+            relocate_mda(nt_out_dir + '/' + 'filt.mda.prv', mountainlab_tmp_path)
+            relocate_mda(nt_out_dir + '/' + 'pre.mda.prv', mountainlab_tmp_path)
 
 if __name__ == "__main__":
     commandline_args = commandline.parse_commandline_arguments()
