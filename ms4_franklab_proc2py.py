@@ -3,6 +3,7 @@ from mountainlab_pytools import mlproc as mlp
 import os
 import json
 import subprocess
+import mda_util
 
 # This script acts as the most basic interface between python and mountainlab processors.  
 # Defining a processors inputs, outputs, and params here allows processors written in any language
@@ -180,7 +181,7 @@ def tagged_curation(*,cluster_metrics,metrics_tagged,firing_rate_thresh=.01, iso
 
 def get_epoch_offsets(*,dataset_dir, opts={}):
 
-    prv_list = os.listdir(dataset_dir)
+    prv_list = mda_util.get_prv_files_in(dataset_dir)
     ep_files = []
     for prv_file in prv_list:
         with open(dataset_dir + '/' + prv_file, 'r') as f:

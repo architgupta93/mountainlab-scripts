@@ -7,6 +7,17 @@ MODULE_IDENTIFIER = "[MDA Linker] "
 MDA_EXTENSION = '.mda'
 TETRODE_EXTENSION = '.nt'
 
+def get_prv_files_in(dataset_dir='./'):
+    """
+    Get all the prv files in the directory specified by dataset_dir
+    """
+    prv_files = []
+    all_files = os.listdir(dataset_dir)
+    for f in all_files:
+        if f.endswith('.prv'):
+            prv_files.append(f)
+    return prv_files
+
 def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):
     #for each date directory
     if not dirnames:

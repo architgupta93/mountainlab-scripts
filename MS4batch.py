@@ -8,7 +8,7 @@ import commandline
 import mda_util
 import ms4_franklab_pyplines as pyp
 import ms4_franklab_proc2py as p2p
-from distutils.dir_util import copy_tree
+From distutils.dir_util import copy_tree
 from shutil import move
 from tkinter import Tk, filedialog
 
@@ -16,8 +16,8 @@ MODULE_IDENTIFIER = '[MS4Pipeline] '
 MDA_UTIL_FILENAME = 'mda_util.py'
 PYTHON_EXECUTABLE = 'python3'
 PRV_CREAION_EXE   = 'ml-prv-create-index'
-RAW_DIR_NAME      = '/raw' 
-MOUNTAIN_DIR_NAME = '/mountain' 
+RAW_DIR_NAME      = '/raw'
+MOUNTAIN_DIR_NAME = '/mountain'
 ML_PRV_CREATOR    = 'ml-prv-create'
 ML_TMP_DIR        = '/tmp/mountainlab-tmp'
 
@@ -32,7 +32,9 @@ def relocate_mda(prv_file, target_directory):
         mda_path = prv_data['original_path']
         raw_filename = mda_path.split('/')[-1]
         print('Copying MDA from %s.'%mda_path)
-        shutil.move(mda_path, target_directory + '/' + raw_filename)
+        dest_filename = target_directory + '/' + raw_filename
+        shutil.move(mda_path, dest_filename)
+        os.symlink(dest_filename, mda_path)
     except (FileNotFoundError, IOError) as err:
         print('Unable to copy original MDA to output directory.')
         print(err)
@@ -115,36 +117,48 @@ def run_pipeline(source_dirs, results_dir):
     if not os.path.exists(templates_directory):
         os.mkdir(templates_directory)
 
-    tetrode_list = range(1,2)
+    tetrode_list = range(35,38)
     for nt in tetrode_list:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
         mda_util.make_sure_path_exists(nt_out_dir)
-        
+
         # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
         # save this to the output dir; it serves as src for subsequent steps
-        prv_list=os.listdir(nt_src_dir)
+        prv_list=mda_util.get_prv_files_in(nt_src_dir)
         print('Concatenating Epochs: ' + ', '.join(prv_list))
-        pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
+
+        if not os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE):
+            pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
+        else:
+            print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
         
         # preprocessing: filter, mask out artifacts, whiten
-        pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
+        if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
+            pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
+            relocate_mda(nt_out_dir + '/' + 'filt.mda.prv', mountainlab_tmp_path)
+            relocate_mda(nt_out_dir + '/' + 'pre.mda.prv', mountainlab_tmp_path)
+        else:
+            print(MODULE_IDENTIFIER + "Filt file with concatenated epochs found. Using file!")
         
         #run the actual sort 
-        pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
-        pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
-        pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+        if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
+            pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+        else:
+            print(MODULE_IDENTIFIER + "Firings and raw cluster metrics file with concatenated epochs found. Using file!")
 
-        # After running this for a single tetrode, we probably fill up the /tmp
-        # directory. We should clean it up and move all the contents to the
-        # output directory so that they can be used later on.
+        if not os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE):
+            pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+        else:
+            print(MODULE_IDENTIFIER + "Tagged cluster metrics file with concatenated epochs found. Using file!")
 
-        # filt, pre files
-        relocate_mda(nt_out_dir + '/' + 'filt.mda.prv', mountainlab_tmp_path)
-        relocate_mda(nt_out_dir + '/' + 'pre.mda.prv', mountainlab_tmp_path)
+        if not os.path.isfile(nt_out_dir + pyp.CLIPS_FILE):
+            pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
+        else:
+            print(MODULE_IDENTIFIER + "Clips file with concatenated epochs found. Using file!")
 
-        # .tmp files
-        copy_tree(ML_TMP_DIR + '/tmp_long_term', templates_directory)
+        # Generate templates for MountainView
+
 
 if __name__ == "__main__":
     commandline_args = commandline.parse_commandline_arguments()
