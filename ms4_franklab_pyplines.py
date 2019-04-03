@@ -15,10 +15,13 @@ import math
 PARAMS_FILENAME = '/params.json'
 CONCATENATED_EPOCHS_FILE = '/raw.mda'
 FILT_FILENAME = '/filt.mda.prv'
+MASK_FILENAME = '/mask.mda.prv'
 RAW_METRICS_FILE = '/metrics_raw.json'
 TAGGED_METRICS_FILE = '/metrics_tagged.json'
 TEMPLATES_FILE = '/templates.out'
 TEMPLATE_STDS_FILE = '/templates_stdev.out'
+AMPLITUDES_FILE = '/amplitudes.out'
+FEATURES_FILE = '/features.out'
 CLIPS_FILE = '/marks.mda'
 FIRINGS_FILENAME = '/firings_raw.mda'
 PRE_FILENAME = '/pre.mda.prv'
@@ -61,26 +64,31 @@ def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_ar
     
     # Bandpass filter
     p2p.bandpass_filter(
-        timeseries=dataset_dir+'/raw.mda',
-        timeseries_out=output_dir+'/filt.mda.prv',
+        timeseries=dataset_dir+CONCATENATED_EPOCHS_FILE,
+        timeseries_out=output_dir+FILT_FILENAME,
         samplerate=ds_params['samplerate'],
         freq_min=freq_min,
         freq_max=freq_max,
         opts=opts
     )
+
+    file_to_whiten = MASK_FILENAME
     # Mask out artifacts
     if mask_artifacts:
         p2p.mask_out_artifacts(
-            timeseries=output_dir+'/filt.mda.prv',
-            timeseries_out=output_dir+'/filt.mda.prv',
+            timeseries=output_dir+FILT_FILENAME,
+            timeseries_out=output_dir+MASK_FILENAME,
             threshold = 5,
             interval_size=2000,
             opts=opts
             )
+    else:
+        file_to_whiten = FILT_FILENAME
+
     # Whiten
     p2p.whiten(
-        timeseries=output_dir+'/filt.mda.prv',
-        timeseries_out=output_dir+'/pre.mda.prv',
+        timeseries=output_dir+file_to_whiten,
+        timeseries_out=output_dir+PRE_FILENAME,
         opts=opts
     )
     
@@ -239,7 +247,7 @@ def extract_marks(*,dataset_dir, output_dir, opts={}):
         clip_size=1,
         opts=opts)
 
-def generate_templates(*,dataset_dir,output_dir,opts={}):
+def generate_templates(*,dataset_dir,output_dir,metrics_file=None,opts={}):
     try:
         # Read the MDA file for the filtered+whitened data
         with open(dataset_dir+'/pre.mda.prv', 'r') as f:
@@ -249,11 +257,41 @@ def generate_templates(*,dataset_dir,output_dir,opts={}):
         print('Unable to read PRE file for timeseries.')
         timeseries_mda = None
 
-    p2p.generate_templates(
+    p2p.generate_templates_and_amplitudes(
         firings=dataset_dir+'/firings_raw.mda',
         timeseries=timeseries_mda,
         stdevs_out=output_dir+TEMPLATE_STDS_FILE,
         templates_out=output_dir+TEMPLATES_FILE,
-        firings_out=output_dir+'/amplitudes.out',
+        firings_out=output_dir+AMPLITUDES_FILE,
         opts=opts
         )
+
+def cleanup_metrics(*, metrics_file, metrics_out, peak_amplitude_cutoff=5.0, snr_cutoff=3.0, isolation_cutoff=0.8):
+    """
+    Look at the metrics file and perform a cleanup based on its properties -
+    update tags!
+    """
+
+    metrics = None
+    try:
+        with open(metrics_file, 'r') as f:
+            metrics = json.load(f)
+    except (FileNotFoundError, IOError) as err:
+        print('ERROR: Unable to read metrics file. Aborting.')
+        return
+
+    for cluster in metrics['clusters']:
+        if (cluster['metrics']['peak_amp'] < peak_amplitude_cutoff) and (cluster['metrics']['peak_snr'] < snr_cutoff):
+            cluster['tags'].clear()
+            cluster['tags'].append('noise')
+            cluster['tags'].append('rejected')
+        elif (cluster['metrics']['isolation'] < isolation_cutoff):
+            cluster['tags'].clear()
+            cluster['tags'].append('noise')
+            cluster['tags'].append('rejected')
+
+    try:
+        with open(metrics_out, 'w') as f:
+            json.dump(metrics, f, indent=4, separators=(',', ': '))
+    except IOError as err:
+        print('ERROR: Unable to write curated metrics file.')

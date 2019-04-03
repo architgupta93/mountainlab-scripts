@@ -335,7 +335,35 @@ def synthesize_sample_dataset(*,dataset_dir,samplerate=30000,duration=600,num_ch
     with open(dataset_dir+'/params.json', 'w') as outfile:
         json.dump(params, outfile, indent=4)
 
-def generate_templates(*, firings, timeseries, stdevs_out, templates_out, firings_out, clip_size=100, opts={}):
+def generate_clips_and_features(*, firings, timeseries, label, clip_size=100, num_features=3, subtract_mean=1, opts={}):
+    local_firing_out = 'subfirings_'+str(label)+'.out'
+    mlp.runProcess(
+        'mv.mv_subfirings',
+        {
+            'firings':firings,
+        },{
+            'firings_out':local_firing_out
+        },{
+            'labels':label
+        },
+        opts
+        )
+    mlp.runProcess(
+        'mv.mv_extract_clips_features',
+        {
+            'firings':local_firing_out,
+            'timeseries':timeseries
+        },{
+            'features_out':'features'+str(label)+'.out'
+        },{
+            'clip_size':clip_size,
+            'num_features':num_features,
+            'subtract_mean':subtract_mean
+        },
+        opts
+        )
+
+def generate_templates_and_amplitudes(*, firings, timeseries, stdevs_out, templates_out, firings_out, clip_size=100, opts={}):
     mlp.runProcess(
         'mv.mv_compute_templates',
         {
@@ -350,7 +378,6 @@ def generate_templates(*, firings, timeseries, stdevs_out, templates_out, firing
         },
         opts
     )
-    """
     mlp.runProcess(
         'mv.mv_compute_amplitudes',
         {
@@ -363,4 +390,3 @@ def generate_templates(*, firings, timeseries, stdevs_out, templates_out, firing
         },
         opts
     )
-    """
