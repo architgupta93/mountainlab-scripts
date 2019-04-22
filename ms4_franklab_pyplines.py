@@ -38,11 +38,13 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
             print("Unable to read %s for concatenation." % prv_file)
             raise err
     joined = ' '.join(strstart)
+    # print(joined)
     
-    concatenated_mda_filename = output_dir+'/raw.mda'
+    concatenated_mda_filename = output_dir+CONCATENATED_EPOCHS_FILE
     outpath = 'timeseries_out:' + concatenated_mda_filename
 
     subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs', joined,'--outputs',outpath])
+    print('Epochs concatenated into RAW MDA!')
     subprocess.call(['ml-prv-create', concatenated_mda_filename, concatenated_mda_filename + '.prv'])                    
     # Parameters for reading the concatenated epochs
     params = {}
@@ -54,6 +56,7 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
         os.symlink(output_dir + PARAMS_FILENAME, dataset_dir + PARAMS_FILENAME)
     except IOError as err:
         print('ERROR: Unable to write parameter file.')
+        print(err)
 
 def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_artifacts=1,opts={}):
     if not os.path.exists(output_dir):
