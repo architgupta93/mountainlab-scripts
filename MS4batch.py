@@ -117,7 +117,7 @@ def run_pipeline(source_dirs, results_dir):
     if not os.path.exists(templates_directory):
         os.mkdir(templates_directory)
 
-    tetrode_list = range(1,2)
+    tetrode_list = range(1,41)
     for nt in tetrode_list:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)

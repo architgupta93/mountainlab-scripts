@@ -124,7 +124,7 @@ def ms4_sort_full(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect
     
 
 # segs = sort by timesegments, then join any matching  clusters
-def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect_threshold=3,detect_sign=0,rm_segment_intermediates=False, opts={}):
+def ms4_sort_on_segs(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect_threshold=3,detect_sign=0,rm_segment_intermediates=True, opts={}):
 
     # Fetch dataset parameters
     ds_params=p2p.read_dataset_params(dataset_dir)
