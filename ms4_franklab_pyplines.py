@@ -38,7 +38,7 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
             print("Unable to read %s for concatenation." % prv_file)
             raise err
     joined = ' '.join(strstart)
-    # print(joined)
+    print(joined)
     
     concatenated_mda_filename = output_dir+CONCATENATED_EPOCHS_FILE
     outpath = 'timeseries_out:' + concatenated_mda_filename

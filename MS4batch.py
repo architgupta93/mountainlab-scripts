@@ -135,10 +135,13 @@ def run_pipeline(source_dirs, results_dir):
         
         # preprocessing: filter, mask out artifacts, whiten
         move_filt_mask_whiten_files = False
+        do_mask_artifacts = 0
         if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
-            pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, opts={})
+            pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
+                    mask_artifacts=do_mask_artifacts,opts={})
             relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
-            relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
+            if do_mask_artifacts:
+                relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
             move_filt_mask_whiten_files = True
         else:
             print(MODULE_IDENTIFIER + "Filt file with concatenated epochs found. Using file!")
