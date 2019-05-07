@@ -109,6 +109,7 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
             print(MODULE_IDENTIFIER + 'Tetrode seems to have been sorted. Continuing...')
             continue
 
+        move_filt_mask_whiten_files = False
         if not os.path.isfile(nt_out_dir + pyp.PRE_FILENAME):
             # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
             # save this to the output dir; it serves as src for subsequent steps
@@ -121,7 +122,6 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
                 print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
             
             # preprocessing: filter, mask out artifacts, whiten
-            move_filt_mask_whiten_files = False
             if not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
                 pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                         mask_artifacts=do_mask_artifacts,opts={})
