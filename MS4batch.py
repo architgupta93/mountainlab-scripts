@@ -120,9 +120,16 @@ def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=F
         if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
             pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                     mask_artifacts=do_mask_artifacts,opts={})
-            mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
-            if do_mask_artifacts:
-                mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
+            if clear_files:
+                print(MODULE_IDENTIFIER + "Cleaning RAW, FILT, MASK files.")
+                mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
+                mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
+                if do_mask_artifacts:
+                    mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+            else:
+                mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+                if do_mask_artifacts:
+                    mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
             move_filt_mask_whiten_files = True
         else:
             print(MODULE_IDENTIFIER + "Filt file with concatenated epochs found. Using file!")
@@ -154,12 +161,6 @@ def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=F
 
         if (os.path.isfile(nt_out_dir + '/hand_curated.json')):
             pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir, hand_curation=True)
-
-        if clear_files:
-            mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
-            mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
-            if do_mask_artifacts:
-                mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
 
         if move_filt_mask_whiten_files:
             mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
