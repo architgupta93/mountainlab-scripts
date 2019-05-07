@@ -2,6 +2,8 @@
 #run this from the preprocessing directory containing all dates' data
 import os
 import sys
+import json
+import shutil
 
 MODULE_IDENTIFIER = "[MDA Linker] "
 MDA_EXTENSION = '.mda'
@@ -17,7 +19,6 @@ def clear_mda(prv_file):
         mda_path = prv_data['original_path']
         raw_filename = mda_path.split('/')[-1]
         print('Copying MDA from %s.'%mda_path)
-        dest_filename = target_directory + '/' + raw_filename
         os.remove(mda_path)
         os.remove(prv_file)
     except (FileNotFoundError, IOError) as err:
