@@ -7,6 +7,42 @@ MODULE_IDENTIFIER = "[MDA Linker] "
 MDA_EXTENSION = '.mda'
 TETRODE_EXTENSION = '.nt'
 
+def clear_mda(prv_file):
+    """
+    Look at a PRV file and delete the corresponding MDA.
+    """
+    try:
+        with open(prv_file) as f:
+            prv_data = json.load(f)
+        mda_path = prv_data['original_path']
+        raw_filename = mda_path.split('/')[-1]
+        print('Copying MDA from %s.'%mda_path)
+        dest_filename = target_directory + '/' + raw_filename
+        os.remove(mda_path)
+        os.remove(prv_file)
+    except (FileNotFoundError, IOError) as err:
+        print('Unable to remove original MDA.')
+        print(err)
+
+def relocate_mda(prv_file, target_directory):
+    """
+    Look at a PRV file, identify the MDA location and move it to the specified
+    target location.
+    """
+    try:
+        with open(prv_file) as f:
+            prv_data = json.load(f)
+        mda_path = prv_data['original_path']
+        raw_filename = mda_path.split('/')[-1]
+        print('Copying MDA from %s.'%mda_path)
+        dest_filename = target_directory + '/' + raw_filename
+        shutil.move(mda_path, dest_filename)
+        os.symlink(dest_filename, mda_path)
+    except (FileNotFoundError, IOError) as err:
+        print('Unable to copy original MDA to output directory.')
+        print(err)
+
+
 def get_prv_files_in(dataset_dir='./'):
     """
     Get all the prv files in the directory specified by dataset_dir

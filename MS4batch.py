@@ -21,41 +21,6 @@ MOUNTAIN_DIR_NAME = '/mountain'
 ML_PRV_CREATOR    = 'ml-prv-create'
 ML_TMP_DIR        = '/tmp/mountainlab-tmp'
 
-def clear_mda(prv_file, target_directory):
-    """
-    Look at a PRV file and delete the corresponding MDA.
-    """
-    try:
-        with open(prv_file) as f:
-            prv_data = json.load(f)
-        mda_path = prv_data['original_path']
-        raw_filename = mda_path.split('/')[-1]
-        print('Copying MDA from %s.'%mda_path)
-        dest_filename = target_directory + '/' + raw_filename
-        os.remove(mda_path)
-        os.remove(prv_file)
-    except (FileNotFoundError, IOError) as err:
-        print('Unable to remove original MDA.')
-        print(err)
-
-def relocate_mda(prv_file, target_directory):
-    """
-    Look at a PRV file, identify the MDA location and move it to the specified
-    target location.
-    """
-    try:
-        with open(prv_file) as f:
-            prv_data = json.load(f)
-        mda_path = prv_data['original_path']
-        raw_filename = mda_path.split('/')[-1]
-        print('Copying MDA from %s.'%mda_path)
-        dest_filename = target_directory + '/' + raw_filename
-        shutil.move(mda_path, dest_filename)
-        os.symlink(dest_filename, mda_path)
-    except (FileNotFoundError, IOError) as err:
-        print('Unable to copy original MDA to output directory.')
-        print(err)
-
 def setup_NT_links(working_dir):
     """
     Suppose the day's data are located at /data/path
@@ -155,9 +120,9 @@ def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=F
         if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
             pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                     mask_artifacts=do_mask_artifacts,opts={})
-            relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+            mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
             if do_mask_artifacts:
-                relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
+                mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
             move_filt_mask_whiten_files = True
         else:
             print(MODULE_IDENTIFIER + "Filt file with concatenated epochs found. Using file!")
@@ -191,13 +156,13 @@ def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=F
             pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir, hand_curation=True)
 
         if clear_files:
-            clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
-            clear_mda(nt_out_dir + pyp.FILT_FILENAME)
+            mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
+            mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
             if do_mask_artifacts:
-                clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+                mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
 
         if move_filt_mask_whiten_files:
-            relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
+            mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
 
 if __name__ == "__main__":
     commandline_args = commandline.parse_commandline_arguments()
