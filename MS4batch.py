@@ -21,6 +21,23 @@ MOUNTAIN_DIR_NAME = '/mountain'
 ML_PRV_CREATOR    = 'ml-prv-create'
 ML_TMP_DIR        = '/tmp/mountainlab-tmp'
 
+def clear_mda(prv_file, target_directory):
+    """
+    Look at a PRV file and delete the corresponding MDA.
+    """
+    try:
+        with open(prv_file) as f:
+            prv_data = json.load(f)
+        mda_path = prv_data['original_path']
+        raw_filename = mda_path.split('/')[-1]
+        print('Copying MDA from %s.'%mda_path)
+        dest_filename = target_directory + '/' + raw_filename
+        os.remove(mda_path)
+        os.remove(prv_file)
+    except (FileNotFoundError, IOError) as err:
+        print('Unable to remove original MDA.')
+        print(err)
+
 def relocate_mda(prv_file, target_directory):
     """
     Look at a PRV file, identify the MDA location and move it to the specified
@@ -76,7 +93,7 @@ def setup_NT_links(working_dir):
             output_file_path = destlink + '/' + mda_file_name + '.raw.mda.prv'
             subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
 
-def run_pipeline(source_dirs, results_dir):
+def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=False):
     # Get the path for this file -> And then the directory in which this file
     # is located. We do expect mda_utils to be in the same location as this
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -135,7 +152,6 @@ def run_pipeline(source_dirs, results_dir):
         
         # preprocessing: filter, mask out artifacts, whiten
         move_filt_mask_whiten_files = False
-        do_mask_artifacts = 0
         if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
             pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                     mask_artifacts=do_mask_artifacts,opts={})
@@ -174,9 +190,14 @@ def run_pipeline(source_dirs, results_dir):
         if (os.path.isfile(nt_out_dir + '/hand_curated.json')):
             pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir, hand_curation=True)
 
+        if clear_files:
+            clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
+            clear_mda(nt_out_dir + pyp.FILT_FILENAME)
+            if do_mask_artifacts:
+                clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+
         if move_filt_mask_whiten_files:
             relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
-
 
 if __name__ == "__main__":
     commandline_args = commandline.parse_commandline_arguments()
@@ -199,6 +220,14 @@ if __name__ == "__main__":
         print("Using root directory as start-point for MDA search.")
         initial_directory = '/'
 
+    do_mask_artifacts = True
+    if commandline_args.mask_artifacts:
+        do_mask_artifacts = commandline_args.mask_artifacts
+
+    clear_files = False
+    if commandline_args.clear_files:
+        clear_files = commandline_args.clear_files
+
     while True:
         new_mda_dir = filedialog.askdirectory(initialdir=initial_directory, \
                 title="Select MDA Files")
@@ -208,4 +237,4 @@ if __name__ == "__main__":
         print("Added %s."%new_mda_dir)
     gui_root.destroy()
 
-    run_pipeline(mda_list, commandline_args.output_dir)
+    run_pipeline(mda_list, commandline_args.output_dir, do_mask_artifacts, clear_files)

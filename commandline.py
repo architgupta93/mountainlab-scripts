@@ -14,6 +14,8 @@ def parse_commandline_arguments():
     # Setting up the parser
     parser = argparse.ArgumentParser(description='MountainSort Batch Helper.')
     parser.add_argument('--animal', metavar='<animal-name>', help='Animal name')
+    parser.add_argument('--mask-artifacts', metavar='<mask-artifacts>', help='Mark signal artifacts', type=bool)
+    parser.add_argument('--clear-files', metavar='<clear-files>', help='Clear additional files', type=bool)
     parser.add_argument('--date', metavar='YYYYMMDD', help='Experiment date', type=int)
     parser.add_argument('--data-dir', metavar='<[MDA] data-directory>', help='Data directory from which MDA files should be read.')
     parser.add_argument('--output-dir', metavar='<output-directory>', help='Output directory where sorted spike data should be stored')

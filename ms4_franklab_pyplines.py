@@ -58,7 +58,7 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
         print('ERROR: Unable to write parameter file.')
         print(err)
 
-def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_artifacts=1,opts={}):
+def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_artifacts=True,opts={}):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
         
@@ -82,7 +82,7 @@ def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_ar
             timeseries=output_dir+FILT_FILENAME,
             timeseries_out=output_dir+MASK_FILENAME,
             threshold = 5,
-            interval_size=2000,
+            interval_size=105,
             opts=opts
             )
     else:
@@ -284,6 +284,9 @@ def cleanup_metrics(*, metrics_file, metrics_out, peak_amplitude_cutoff=5.0, snr
         return
 
     for cluster in metrics['clusters']:
+        if (cluster['metrics']['peak_amp'] is None) or (cluster['metrics']['peak_snr'] is None):
+            continue
+
         if (cluster['metrics']['peak_amp'] < peak_amplitude_cutoff) and (cluster['metrics']['peak_snr'] < snr_cutoff):
             cluster['tags'].clear()
             cluster['tags'].append('noise')
