@@ -122,7 +122,7 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
             
             # preprocessing: filter, mask out artifacts, whiten
             move_filt_mask_whiten_files = False
-            if os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
+            if not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
                 pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                         mask_artifacts=do_mask_artifacts,opts={})
                 if clear_files:
