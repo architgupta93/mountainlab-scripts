@@ -58,7 +58,7 @@ def setup_NT_links(working_dir):
             output_file_path = destlink + '/' + mda_file_name + '.raw.mda.prv'
             subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
 
-def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=False):
+def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True, clear_files=False):
     # Get the path for this file -> And then the directory in which this file
     # is located. We do expect mda_utils to be in the same location as this
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -99,40 +99,47 @@ def run_pipeline(source_dirs, results_dir, do_mask_artifacts=True, clear_files=F
     if not os.path.exists(templates_directory):
         os.mkdir(templates_directory)
 
-    tetrode_list = range(1,41)
-    for nt in tetrode_list:
+    for nt in tetrode_range:
         nt_src_dir = mountain_src_path+'/nt'+str(nt)
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
         mda_util.make_sure_path_exists(nt_out_dir)
 
-        # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
-        # save this to the output dir; it serves as src for subsequent steps
-        prv_list=mda_util.get_prv_files_in(nt_src_dir)
-        print('Concatenating Epochs: ' + ', '.join(prv_list))
+        # If sorting has already happened, move on...
+        if (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE)):
+            print(MODULE_IDENTIFIER + 'Tetrode seems to have been sorted. Continuing...')
+            continue
 
-        if not os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE):
-            pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
-        else:
-            print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
-        
-        # preprocessing: filter, mask out artifacts, whiten
-        move_filt_mask_whiten_files = False
-        if not (os.path.isfile(nt_out_dir + pyp.FILT_FILENAME) and os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)):
-            pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
-                    mask_artifacts=do_mask_artifacts,opts={})
-            if clear_files:
-                print(MODULE_IDENTIFIER + "Cleaning RAW, FILT, MASK files.")
-                mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
-                mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
-                if do_mask_artifacts:
-                    mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+        if not os.path.isfile(nt_out_dir + pyp.PRE_FILENAME):
+            # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
+            # save this to the output dir; it serves as src for subsequent steps
+            prv_list=mda_util.get_prv_files_in(nt_src_dir)
+            print('Concatenating Epochs: ' + ', '.join(prv_list))
+
+            if not os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE):
+                pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
             else:
-                mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
-                if do_mask_artifacts:
-                    mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
-            move_filt_mask_whiten_files = True
+                print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
+            
+            # preprocessing: filter, mask out artifacts, whiten
+            move_filt_mask_whiten_files = False
+            if os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
+                pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
+                        mask_artifacts=do_mask_artifacts,opts={})
+                if clear_files:
+                    print(MODULE_IDENTIFIER + "Cleaning RAW, FILT, MASK files.")
+                    mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
+                    mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
+                    if do_mask_artifacts:
+                        mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+                else:
+                    mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+                    if do_mask_artifacts:
+                        mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
+                move_filt_mask_whiten_files = True
+            else:
+                print(MODULE_IDENTIFIER + "Filt, Mask, Pre files with concatenated epochs found. Using file!")
         else:
-            print(MODULE_IDENTIFIER + "Filt file with concatenated epochs found. Using file!")
+            print(MODULE_IDENTIFIER + "PRE file with concatenated epochs found. Using file!")
         
         #run the actual sort 
         if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
@@ -194,6 +201,16 @@ if __name__ == "__main__":
     if commandline_args.clear_files:
         clear_files = commandline_args.clear_files
 
+    tetrode_begin = 1
+    tetrode_end = 40
+    if commandline_args.tetrode_begin:
+        tetrode_begin = commandline_args.tetrode_begin
+
+    if commandline_args.tetrode_end:
+        tetrode_end = commandline_args.tetrode_end
+
+    tetrode_range = range(tetrode_begin, tetrode_end+1)
+
     while True:
         new_mda_dir = filedialog.askdirectory(initialdir=initial_directory, \
                 title="Select MDA Files")
@@ -203,4 +220,4 @@ if __name__ == "__main__":
         print("Added %s."%new_mda_dir)
     gui_root.destroy()
 
-    run_pipeline(mda_list, commandline_args.output_dir, do_mask_artifacts, clear_files)
+    run_pipeline(mda_list, commandline_args.output_dir, tetrode_range, do_mask_artifacts, clear_files)
