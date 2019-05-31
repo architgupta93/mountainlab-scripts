@@ -8,6 +8,7 @@ import json
 import numpy as np
 from mountainlab_pytools import mdaio
 from sklearn.preprocessing import normalize
+from sklearn.decomposition import PCA
 from scipy.signal import butter, lfilter
 
 # Qt5 imports
@@ -32,6 +33,7 @@ import QtHelperUtils
 MODULE_IDENTIFIER = "[MLView] "
 FIRING_CLIP_SIZE = 50
 N_ELECTRODE_CHANNELS = 4
+WHITEN_CLIP_DATA = False
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
@@ -270,8 +272,15 @@ class MLViewer(QMainWindow):
         try:
             # raw_clip_data = normalize(mdaio.readmda(clips_file), axis=1)
             # raw_clip_data = mdaio.readmda(clips_file)
-            raw_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 300, 6000, \
+            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 500, 5000, \
                     MountainViewIO.SPIKE_SAMPLING_RATE)
+            print(MODULE_IDENTIFIER + 'Filtered clip data...')
+            if WHITEN_CLIP_DATA:
+                pca_filter = PCA(whiten=True)
+                raw_clip_data = np.matmul(pca_filter.fit_transform(filtered_clip_data).T, filtered_clip_data)
+                print(MODULE_IDENTIFIER + 'Whitened clip data...')
+            else:
+                raw_clip_data = filtered_clip_data
         except (FileNotFoundError, IOError) as err:
             QtHelperUtils.display_warning('Unable to read MDA file.')
             return
@@ -295,7 +304,6 @@ class MLViewer(QMainWindow):
                 FIRING_CLIP_SIZE+FIRING_CLIP_SIZE), dtype=float)
         self.firing_amplitudes = np.empty((n_spikes, N_ELECTRODE_CHANNELS), \
                 dtype=float)
-
 
         # Find the firing timepoint in the raw data file. If the firings data
         # is raw data from mountainsort, then you have the indices readily
@@ -321,7 +329,8 @@ class MLViewer(QMainWindow):
         # self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
 
         print(self.firing_amplitudes.shape)
-        self.firing_limits = (-500, 2000)
+        # self.firing_limits = (-500, 2000)
+        self.firing_limits = (np.min(self.firing_amplitudes), np.max(self.firing_amplitudes))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
 
     def populateTetrodeMenu(self, default_entry=None):
