@@ -78,6 +78,10 @@ class MLViewer(QMainWindow):
         self.firing_amplitudes = None
         self.clusters = None
         self.current_tetrode = 0
+        self.firing_limits = (-500, 2000)
+        self.session_id = 1
+        self.timestamp_file = None
+        self.timestamp_data = None
 
         # Graphical entities
         self.widget  = QDialog()
@@ -94,7 +98,7 @@ class MLViewer(QMainWindow):
         self._ax_ch3v4 = self.figure.add_subplot(plot_grid[5])
 
         self.unit_selection = QComboBox()
-        # self.unit_selection.currentIndexChanged.connect(self.refresh)
+        self.unit_selection.activated.connect(self.refresh)
         # Add next and prev buttons to look at individual cells.
         self.next_unit_button = QPushButton('Next')
         self.next_unit_button.clicked.connect(self.NextUnit)
@@ -103,7 +107,7 @@ class MLViewer(QMainWindow):
 
         # Selecting individual tetrodes
         self.tetrode_selection = QComboBox()
-        # self.tetrode_selection.currentIndexChanged.connect(self.refresh)
+        self.tetrode_selection.activated.connect(self.fetchTetrodeData)
         # Add next and prev buttons to look at individual cells.
         self.next_tet_button = QPushButton('Next')
         self.next_tet_button.clicked.connect(self.NextTetrode)
@@ -116,36 +120,39 @@ class MLViewer(QMainWindow):
         self.setGeometry(100, 100, 1200, 1200)
         self.clearAxes()
 
+        if self.data_dir is not None:
+            self.populateTetrodeMenu()
+
     def clearAxes(self):
         self._ax_ch1v2.cla()
         self._ax_ch1v2.grid(True)
-        self._ax_ch1v2.set_xlim((-500, 1500))
-        self._ax_ch1v2.set_ylim((-500, 1500))
+        self._ax_ch1v2.set_xlim(self.firing_limits)
+        self._ax_ch1v2.set_ylim(self.firing_limits)
 
         self._ax_ch1v3.cla()
         self._ax_ch1v3.grid(True)
-        self._ax_ch1v3.set_xlim((-500, 1500))
-        self._ax_ch1v3.set_ylim((-500, 1500))
+        self._ax_ch1v3.set_xlim(self.firing_limits)
+        self._ax_ch1v3.set_ylim(self.firing_limits)
 
         self._ax_ch1v4.cla()
         self._ax_ch1v4.grid(True)
-        self._ax_ch1v4.set_xlim((-500, 1500))
-        self._ax_ch1v4.set_ylim((-500, 1500))
+        self._ax_ch1v4.set_xlim(self.firing_limits)
+        self._ax_ch1v4.set_ylim(self.firing_limits)
 
         self._ax_ch2v3.cla()
         self._ax_ch2v3.grid(True)
-        self._ax_ch2v3.set_xlim((-500, 1500))
-        self._ax_ch2v3.set_ylim((-500, 1500))
+        self._ax_ch2v3.set_xlim(self.firing_limits)
+        self._ax_ch2v3.set_ylim(self.firing_limits)
 
         self._ax_ch2v4.cla()
         self._ax_ch2v4.grid(True)
-        self._ax_ch2v4.set_xlim((-500, 1500))
-        self._ax_ch2v4.set_ylim((-500, 1500))
+        self._ax_ch2v4.set_xlim(self.firing_limits)
+        self._ax_ch2v4.set_ylim(self.firing_limits)
  
         self._ax_ch3v4.cla()
         self._ax_ch3v4.grid(True)
-        self._ax_ch3v4.set_xlim((-500, 1500))
-        self._ax_ch3v4.set_ylim((-500, 1500))
+        self._ax_ch3v4.set_xlim(self.firing_limits)
+        self._ax_ch3v4.set_ylim(self.firing_limits)
 
     def setupWidgetLayout(self):
         parent_layout_box = QVBoxLayout()
@@ -195,6 +202,58 @@ class MLViewer(QMainWindow):
             self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=8)
         self.canvas.draw()
 
+    def fetchTetrodeData(self, _):
+        """
+        Fetch spikes and clips/whitened data for the current tetrode and display it.
+        """
+        tetrode_id = self.tetrode_selection.currentText()
+        if self.data_dir is None:
+            self.data_dir = QtHelperUtils.get_directory(message="Choose firings data directory.")
+        tetrode_dir = os.path.join(self.data_dir, 'nt' + tetrode_id)
+        firings_file = 'firings-' + str(self.session_id) + '.curated.mda'
+        firings_file_path = os.path.join(tetrode_dir, firings_file)
+
+        if not os.path.exists(firings_file_path):
+            QtHelperUtils.display_warning('Firings file not found for tetrode %s.'%tetrode_id)
+            return
+
+        # Get the spike data
+        self.loadFirings(False, firings_file_path)
+        
+        # Get the clips data
+        # TODO: This approach only works for getting the raw data. For whitened
+        # data, other stuff might be needed.
+        if self.raw_data_location is None:
+            self.raw_data_location = QtHelperUtils.get_directory(message="Choose raw data location.")
+
+        # Try to get the clips file first
+        clips_file_path = None
+        all_raw_files = os.listdir(self.raw_data_location)
+        tetrode_identifier = 'nt'+str(tetrode_id)+'.mda'
+        for raw_file in all_raw_files:
+            if tetrode_identifier in raw_file:
+                clips_file_path = os.path.join(self.raw_data_location, raw_file)
+                self.statusBar().showMessage('Found clips file: ' + clips_file_path)
+                break
+        self.extractClips(False, clips_file_path)
+        self.refresh(False)
+
+    def extractWhitened(self, _, clips_file=None):
+        """
+        Extract clips from whitened data and use that to get firing information.
+        """
+
+        if self.firing_data is None:
+            QtHelperUtils.display_warning('Load firings data first!')
+            return
+
+        if clips_file is None:
+            clips_file = QtHelperUtils.get_open_file_name(data_dir=self.raw_data_location,\
+                    file_format='MDA (*.mda)', message='Choose whitened data file')
+
+        self.firing_limits = (-20, 20)
+        pass
+
     def extractClips(self, _, clips_file=None):
         """
         Extract clips (spike waveforms on all the 4 channels for a given tetrode.)
@@ -219,16 +278,17 @@ class MLViewer(QMainWindow):
 
         # Try reading the timestamps from the same location... Usually, data
         # file is stored alongside the timestamp file.
-        timestamp_file = clips_file.split('.nt')[0] + '.timestamps.mda'
-        if not os.path.exists(timestamp_file):
-            timestamp_file = QtHelperUtils.get_open_file_name(data_dir=self.raw_data_location,\
-                    file_format='MDA (*.mda)', message='Choose timestamps file') 
+        if self.timestamp_data is None:
+            timestamp_file = clips_file.split('.nt')[0] + '.timestamps.mda'
+            if not os.path.exists(timestamp_file):
+                timestamp_file = QtHelperUtils.get_open_file_name(data_dir=self.raw_data_location,\
+                        file_format='MDA (*.mda)', message='Choose timestamps file') 
 
-        try:
-            spike_timestamps = mdaio.readmda(timestamp_file)
-        except (FileNotFoundError, IOError) as err:
-            QtHelperUtils.display_warning('Unable to read timestamps file.')
-            return
+            try:
+                self.timestamp_data = mdaio.readmda(timestamp_file)
+            except (FileNotFoundError, IOError) as err:
+                QtHelperUtils.display_warning('Unable to read timestamps file.')
+                return
 
         n_spikes = len(self.firing_data[1])
         self.firing_clips = np.empty((n_spikes, N_ELECTRODE_CHANNELS, \
@@ -241,9 +301,9 @@ class MLViewer(QMainWindow):
         # is raw data from mountainsort, then you have the indices readily
         # available to you. Otherwise, need to search for clips in the raw data
         # file by timestamp.
-        spike_indices = np.searchsorted(spike_timestamps, self.firing_data[1])
+        spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
         for spk_idx in range(n_spikes):
-            if (spike_indices[spk_idx] < FIRING_CLIP_SIZE) or (spike_indices[spk_idx]+FIRING_CLIP_SIZE>len(spike_timestamps)):
+            if (spike_indices[spk_idx] < FIRING_CLIP_SIZE) or (spike_indices[spk_idx]+FIRING_CLIP_SIZE>len(self.timestamp_data)):
                 # Unable to get the complete clip for this spike, might as well
                 # ignore it... This shouldn't be so common though!
                 self.firing_clips[spk_idx, :, :] = 0.0
@@ -261,7 +321,27 @@ class MLViewer(QMainWindow):
         # self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
 
         print(self.firing_amplitudes.shape)
+        self.firing_limits = (-500, 2000)
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
+
+    def populateTetrodeMenu(self, default_entry=None):
+        try:
+            self.tetrode_selection.clear()
+            if self.tetrode_selection.count() == 0:
+                # Populate the tetrode list using the directory found here
+                tetrode_list = os.listdir(self.data_dir)
+                for tet_dir in tetrode_list:
+                    if 'nt' in tet_dir:
+                        self.tetrode_selection.addItem(tet_dir.split('nt')[-1])
+            if default_entry is not None:
+                self.tetrode_selection.setCurrentIndex(self.tetrode_selection.findText(default_entry))
+        except Exception as err:
+            print(err)
+
+    def populateUnitMenu(self):
+        self.unit_selection.clear()
+        for cl in self.clusters:
+            self.unit_selection.addItem(str(cl))
 
     def loadFirings(self, _, firings_filename=None):
         """
@@ -270,9 +350,16 @@ class MLViewer(QMainWindow):
         if firings_filename is None:
             firings_filename = QtHelperUtils.get_open_file_name(data_dir=self.data_dir,\
                     file_format='MDA (*.mda)', message='Choose firings file')
+            tetrode_dir = os.path.dirname(firings_filename)
+            current_tetrode = tetrode_dir.split('nt')[-1]
+            if self.data_dir is None:
+                # Data directory is 2 levels above the firings file!
+                self.data_dir = os.path.dirname(tetrode_dir)
+            self.populateTetrodeMenu(current_tetrode)
         try:
             self.firing_data = mdaio.readmda(firings_filename)
             self.clusters = set(self.firing_data[2])
+            self.populateUnitMenu()
         except (FileNotFoundError, IOError) as err:
             QtHelperUtils.display_warning('Unable to read MDA file.')
             return
@@ -308,9 +395,27 @@ class MLViewer(QMainWindow):
         QtHelperUtils.display_warning('Function not implemented!')
 
     def NextTetrode(self):
-        QtHelperUtils.display_warning('Function not implemented!')
+        current_tetrode_idx = self.tetrode_selection.currentIndex()
+        if current_tetrode_idx < self.tetrode_selection.count()-1:
+            self.tetrode_selection.setCurrentIndex(current_tetrode_idx+1)
+            self.fetchTetrodeData(False)
 
     def PrevTetrode(self):
+        current_tetrode_idx = self.tetrode_selection.currentIndex()
+        if current_tetrode_idx > 0:
+            self.tetrode_selection.setCurrentIndex(current_tetrode_idx-1)
+            self.fetchTetrodeData(False)
+
+    def sortSingleSession(self):
+        """
+        Sort data from a single recording session.
+        """
+        QtHelperUtils.display_warning('Function not implemented!')
+
+    def sortMultiSession(self):
+        """
+        Merge and sort data from multiple recording sessions.
+        """
         QtHelperUtils.display_warning('Function not implemented!')
 
     def setupMenus(self):
@@ -340,16 +445,29 @@ class MLViewer(QMainWindow):
         load_clips_action.setShortcut('Ctrl+L')
         load_clips_action.triggered.connect(self.extractClips)
 
+        load_whitened_action = open_menu.addAction('&Whitened')
+        load_whitened_action.setShortcut('Ctrl+W')
+        load_whitened_action.triggered.connect(self.extractWhitened)
+
         quit_action = file_menu.addAction('&Exit')
         quit_action.setShortcut('Ctrl+Q')
         quit_action.setStatusTip('Exit Program')
         quit_action.triggered.connect(self.disconnectAndQuit)
 
+        # =============== SORT MENU =============== 
+        sort_menu = menu_bar.addMenu('&Sort')
+        single_session_sort= sort_menu.addAction('&Single')
+        single_session_sort.setStatusTip('Sort 1 recording session')
+        single_session_sort.triggered.connect(self.sortSingleSession)
+
+        multi_session_sort= sort_menu.addAction('&Multiple')
+        multi_session_sort.setStatusTip('Merge and sort multiple recording session')
+        multi_session_sort.triggered.connect(self.sortMultiSession)
         # =============== PLOT MENU =============== 
         plot_menu = menu_bar.addMenu('&Plot')
 
         # =============== PREF MENU =============== 
-        preferences_menu = menu_bar.addMenu('&Preferences')
+        preferences_menu = menu_bar.addMenu('Pre&ferences')
         
 def launchMLViewApplication(args):
     """
