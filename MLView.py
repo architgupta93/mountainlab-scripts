@@ -435,11 +435,22 @@ class MLViewer(QMainWindow):
             self.tetrode_selection.setCurrentIndex(current_tetrode_idx-1)
             self.fetchTetrodeData(False)
 
+    def getSortOptions(self):
+        """
+        Ask for sorting options from the user.
+        """
+        QtHelperUtils.display_warning('Function not implemented!')
+
     def sortSingleSession(self):
         """
         Sort data from a single recording session.
         """
-        QtHelperUtils.display_warning('Function not implemented!')
+        mda_list = [QtHelperUtils.get_directory(self.data_dir, \
+                message="Select epoch MDA to be sorted")]
+        tetrode_range = range(1,40)
+        do_mask_artifacts = True
+        clear_files = True
+        MS4batch.run_pipeline(mda_list, self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
 
     def sortMultiSession(self):
         """
@@ -449,7 +460,7 @@ class MLViewer(QMainWindow):
         mda_list = list()
         while True:
             new_mda_dir = QtHelperUtils.get_directory(self.data_dir, \
-                    message="Select MDA Files")
+                    message="Select MDA Files (Cancel to stop)")
             if not new_mda_dir:
                 break
             mda_list.append(new_mda_dir)

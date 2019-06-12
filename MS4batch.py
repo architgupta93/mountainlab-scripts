@@ -61,6 +61,9 @@ def setup_NT_links(working_dir):
 def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True, clear_files=False):
     # Get the path for this file -> And then the directory in which this file
     # is located. We do expect mda_utils to be in the same location as this
+
+    n_epochs_to_sort = len(source_dirs)
+    print(MODULE_IDENTIFIER + 'Merging/sorting %d epochs.'%n_epochs_to_sort)
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     mda_util_path = current_file_dir + '/' + MDA_UTIL_FILENAME
     mnt_path = results_dir + '.mnt'
@@ -141,9 +144,12 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         else:
             print(MODULE_IDENTIFIER + "PRE file with concatenated epochs found. Using file!")
         
-        #run the actual sort 
+        # run the actual sort
         if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
-            pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+            if n_epochs_to_sort > 1:
+                pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+            else:
+                pyp.ms4_sort_full(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
         else:
             print(MODULE_IDENTIFIER + "Firings and raw cluster metrics file with concatenated epochs found. Using file!")
 
