@@ -100,8 +100,8 @@ class FileOpenApplication(QWidget):
                 file_format)
         return save_file
 
-    def getDirectory(self, message):
-        return QFileDialog.getExistingDirectory(self, message)
+    def getDirectory(self, data_dir, message):
+        return QFileDialog.getExistingDirectory(self, message, data_dir)
 
 # On OSX, getting TK to work seems to be a pain. This is an easier alternative to get the filename
 def get_open_file_name(data_dir=None, file_format='All Files (*.*)', message="Choose file"):
@@ -120,9 +120,9 @@ def get_save_file_name(data_dir=None, file_format='All Files (*.*)', message="Ch
     file_dialog.close()
     return file_name
 
-def get_directory(message="Choose a directory"):
+def get_directory(data_dir=None,message="Choose a directory"):
     file_dialog = FileOpenApplication()
-    dir_name = file_dialog.getDirectory(message)
+    dir_name = file_dialog.getDirectory(data_dir,message)
     file_dialog.close()
     return dir_name
 

@@ -70,6 +70,12 @@ class MLViewer(QMainWindow):
         else:
             self.data_dir = None
 
+        if args.output_dir:
+            self.output_dir = args.output_dir
+        else:
+            print(MODULE_IDENTIFIER + 'Output directory not specified. Using current directory.')
+            self.output_dir = os.getcwd()
+
         if args.raw:
             self.raw_data_location = args.raw
         else:
@@ -221,9 +227,9 @@ class MLViewer(QMainWindow):
         Fetch spikes and clips/whitened data for the current tetrode and display it.
         """
         tetrode_id = self.tetrode_selection.currentText()
-        if self.data_dir is None:
-            self.data_dir = QtHelperUtils.get_directory(message="Choose firings data directory.")
-        tetrode_dir = os.path.join(self.data_dir, 'nt' + tetrode_id)
+        if self.output_dir is None:
+            self.output_dir = QtHelperUtils.get_directory(message="Choose firings data directory.")
+        tetrode_dir = os.path.join(self.output_dir, 'nt' + tetrode_id)
         firings_file = 'firings-' + str(self.session_id) + '.curated.mda'
         firings_file_path = os.path.join(tetrode_dir, firings_file)
 
@@ -373,9 +379,9 @@ class MLViewer(QMainWindow):
                     file_format='MDA (*.mda)', message='Choose firings file')
             tetrode_dir = os.path.dirname(firings_filename)
             current_tetrode = tetrode_dir.split('nt')[-1]
-            if self.data_dir is None:
+            if self.output_dir is None:
                 # Data directory is 2 levels above the firings file!
-                self.data_dir = os.path.dirname(tetrode_dir)
+                self.output_dir = os.path.dirname(tetrode_dir)
             self.populateTetrodeMenu(current_tetrode)
         try:
             self.firing_data = mdaio.readmda(firings_filename)
@@ -442,7 +448,7 @@ class MLViewer(QMainWindow):
         # Get a list of MDAs to be sorted.
         mda_list = list()
         while True:
-            new_mda_dir = QtHelperUtils.get_directory(initialdir=initial_directory, \
+            new_mda_dir = QtHelperUtils.get_directory(self.data_dir, \
                     message="Select MDA Files")
             if not new_mda_dir:
                 break
@@ -454,7 +460,31 @@ class MLViewer(QMainWindow):
         tetrode_range = range(1,40)
         do_mask_artifacts = True
         clear_files = True
-        MS4batch.run_pipeline(mda_list, self.data_dir, tetrode_range, do_mask_artifacts, clear_files)
+        MS4batch.run_pipeline(mda_list, self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
+
+    def launchMountainView(self):
+        """
+        Launch mountain-view to look at the current tetrode's data there.
+        """
+        QtHelperUtils.display_warning('Function not implemented!')
+
+    def selectOutputDirectory(self):
+        """
+        Select a new output directory.
+        """
+        self.output_dir = QtHelperUtils.get_directory(message='Select output directory.')
+
+    def selectDataDirectory(self):
+        """
+        Select a new output directory.
+        """
+        self.data_dir = QtHelperUtils.get_directory(message='Select (processed) data directory.')
+
+    def selectRawDirectory(self):
+        """
+        Select a new output directory.
+        """
+        self.raw_data_dir = QtHelperUtils.get_directory(message='Select (raw) data directory.')
 
     def setupMenus(self):
         # Set up the menu bar
@@ -465,6 +495,11 @@ class MLViewer(QMainWindow):
         refresh_action = file_menu.addAction('&Refresh')
         refresh_action.setShortcut('Ctrl+R')
         refresh_action.triggered.connect(self.refresh)
+
+        # Run Qt-Mountainview from here
+        qt_mview_action = file_menu.addAction('&MountainView')
+        qt_mview_action.setShortcut('Ctrl+M')
+        qt_mview_action.triggered.connect(self.launchMountainView)
 
         # =============== SAVE MENU =============== 
         save_menu = file_menu.addMenu('&Save')
@@ -506,6 +541,16 @@ class MLViewer(QMainWindow):
 
         # =============== PREF MENU =============== 
         preferences_menu = menu_bar.addMenu('Pre&ferences')
+        directories_menu = preferences_menu.addMenu('&Directories')
+
+        output_dir_selection = directories_menu.addAction('&Output directory')
+        output_dir_selection.triggered.connect(self.selectOutputDirectory)
+
+        data_dir_selection = directories_menu.addAction('&Data directory')
+        data_dir_selection.triggered.connect(self.selectDataDirectory)
+
+        raw_dir_selection = directories_menu.addAction('&Raw directory')
+        raw_dir_selection.triggered.connect(self.selectRawDirectory)
         
 def launchMLViewApplication(args):
     """
