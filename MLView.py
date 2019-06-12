@@ -27,6 +27,7 @@ from matplotlib import gridspec
 from matplotlib.animation import FuncAnimation
 
 # Local imports
+import MS4batch
 import MountainViewIO
 import QtHelperUtils
 
@@ -55,7 +56,7 @@ class MLViewer(QMainWindow):
     def __init__(self, args):
         """TODO: to be defined1. """
         QMainWindow.__init__(self)
-        self.setWindowTitle('Cluster viewer')
+        self.setWindowTitle('Mountainsort Helper/Viewer')
         self.statusBar().showMessage('Load or create firings file from File Menu.')
         self.setupMenus()
 
@@ -117,15 +118,23 @@ class MLViewer(QMainWindow):
         self.prev_tet_button.clicked.connect(self.PrevTetrode)
 
         # Launch the main graphical interface as a widget
+        self.show_cluster_widget = False
+        self.setGeometry(100, 100, 400, 20)
+
+        if self.data_dir is not None:
+            self.populateTetrodeMenu()
+
+    def showCluterWidget(self):
+        self.show_cluster_widget = True
         self.setupWidgetLayout()
         self.setCentralWidget(self.widget)
         self.setGeometry(100, 100, 1200, 1200)
         self.clearAxes()
 
-        if self.data_dir is not None:
-            self.populateTetrodeMenu()
-
     def clearAxes(self):
+        if not self.show_cluster_widget:
+            return
+
         self._ax_ch1v2.cla()
         self._ax_ch1v2.grid(True)
         self._ax_ch1v2.set_xlim(self.firing_limits)
@@ -192,6 +201,9 @@ class MLViewer(QMainWindow):
         """
         Redraw the axes with current firing data.
         """
+        if not self.show_cluster_widget:
+            return
+
         self.clearAxes()
         for cl_id in self.clusters:
             spikes_in_cluster = self.firing_data[2] == cl_id
@@ -389,6 +401,8 @@ class MLViewer(QMainWindow):
             self.clusters = set(self.firing_data[2])
         """
 
+        if not self.show_cluster_widget:
+            self.showCluterWidget()
         self.statusBar().showMessage('Firing data loaded from ' + firings_filename)
 
     def loadClusterFile(self, _):
@@ -425,7 +439,22 @@ class MLViewer(QMainWindow):
         """
         Merge and sort data from multiple recording sessions.
         """
-        QtHelperUtils.display_warning('Function not implemented!')
+        # Get a list of MDAs to be sorted.
+        mda_list = list()
+        while True:
+            new_mda_dir = QtHelperUtils.get_directory(initialdir=initial_directory, \
+                    message="Select MDA Files")
+            if not new_mda_dir:
+                break
+            mda_list.append(new_mda_dir)
+            print("Added %s."%new_mda_dir)
+
+        # TODO: Create an input dialog that gets all these properties from the
+        # user (dialog can also show all the directories that have been selected.)
+        tetrode_range = range(1,40)
+        do_mask_artifacts = True
+        clear_files = True
+        MS4batch.run_pipeline(mda_list, self.data_dir, tetrode_range, do_mask_artifacts, clear_files)
 
     def setupMenus(self):
         # Set up the menu bar
