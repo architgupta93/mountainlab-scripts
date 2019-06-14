@@ -1,8 +1,7 @@
-# franklab_MS4
-## This repo contains a python notebook (MS4batch) for managing mountainsort processing across animals, days, and ntrodes. 
+# FosterLab MountainSort pipeline
+## This repo contains python packages (MLView, MS4batch) for managing mountainsort processing. It has been built o n top of Frank Lab's processing pipelines.
 MS4 batch relies on pyplines: collections of processors that perform a collective function, such as preprocessing. 
 pyplines contains calls to the helper module proc2py, which serves as an interface to make processors written in any language callable in python. 
-Ideally, each user will have a flexible notebook or notebooks to manage their sorts, but will use a standardized set of pyplines that might be common to the whole lab. 
 
 ## This system has been built using the MS4 (mountainlab-js) conda package. 
 It also makes use of the following accessory processors:
@@ -14,7 +13,17 @@ Place symlinks to these repos in the /etc/mountainlab/packages directory of your
 (as the frank lab uses it)
 
 ## Installing mountainsort:
-Follow the instructions for conda installation here: https://github.com/flatironinstitute/mountainlab-js
+The long (and possibly better) way of installing mountainsort can be found on the official website.
+Follow the instructions for conda installation here: https://github.com/flatironinstitute/mountainlab-js. I have a compact set of instructions in the file 0-mountainlab-readme which used to work at one point. I am not entirely sure if it would still work after the recent changes to mountainsort (as of writing this on June 13, 2019).
+
+ALTERNATIVELY, run the following hack to install mountainsort:
+    $ conda create -n mlab --file mountainlab.env.info
+
+Subsitute mlab with any name that you would like for your mountainlab environment. mountainlab.env.info has a list of packages and package version that were all compatible with mountainsort at some point and can be used to run spike sorting.
+After this, we need to update a few packages and test that everything is working.
+
+    $ conda activate mlab
+    $ conda install -c flatiron ml_ephys
 
 ## Component Details
 prv: This is a json file (created by jeremy) that acts as a pointer (like an address book) to other files. MS uses it in many instances to keep track of large source data files (or processed files in the tmp directory) rather than storing copies of these big files in multiple locations.  PRVs locate data files by their checksum, a unique identifier based on the content of the file. (This can be found for any file by using the sha1sum command in a terminal)
