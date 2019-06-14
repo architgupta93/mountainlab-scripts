@@ -46,6 +46,10 @@ def setup_NT_links(working_dir):
     # TODO: Implement this function when we are working with multiple epochs.
     mnt_data_dir = working_dir + MOUNTAIN_DIR_NAME
     raw_data_dir = working_dir + RAW_DIR_NAME
+    # Check that raw data directory exists.
+    if not os.path.exists(raw_data_dir):
+        raise FileNotFoundError('Unable to find data directory!')
+
     mda_util.make_sure_path_exists(mnt_data_dir)
     for tet_dir in os.listdir(raw_data_dir):
         destlink = mnt_data_dir + '/' + tet_dir
@@ -87,7 +91,13 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
     print('Destination ' + mountain_res_path)
     if not os.path.exists(mountain_src_path):
         print('No mountain dir found; setting up links across epochs...')
-        setup_NT_links(mnt_path)
+        try:
+            setup_NT_links(mnt_path)
+        except Exception as err:
+            print(MODULE_IDENTIFIER + 'Unable to setup links. Aborting!')
+            print(err)
+            return
+
     print('Finished creating NT Links')
     if not os.path.exists(mountain_res_path):
         os.mkdir(mountain_res_path)
@@ -187,7 +197,7 @@ if __name__ == "__main__":
     # Get source directories using file dialogs.
     gui_root = Tk()
     gui_root.wm_withdraw()
-    mda_list = []
+    mda_list = list()
     """
     # NOTE: This does not work because top-level MDA files end up being directories
     filenames = filedialog.askopenfilenames(initialdir=os.getcwd(), title="Select MDA Files", \
@@ -225,5 +235,4 @@ if __name__ == "__main__":
         mda_list.append(new_mda_dir)
         print("Added %s."%new_mda_dir)
     gui_root.destroy()
-
     run_pipeline(mda_list, commandline_args.output_dir, tetrode_range, do_mask_artifacts, clear_files)

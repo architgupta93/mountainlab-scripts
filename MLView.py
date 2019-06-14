@@ -445,12 +445,16 @@ class MLViewer(QMainWindow):
         """
         Sort data from a single recording session.
         """
-        mda_list = [QtHelperUtils.get_directory(self.data_dir, \
-                message="Select epoch MDA to be sorted")]
+        epoch_mda_file = QtHelperUtils.get_directory(self.data_dir, \
+                message="Select epoch MDA to be sorted")
+        if not epoch_mda_file:
+            QtHelperUtils.display_warning('Inappropriate MDA specified for sorting!')
+            return
+
         tetrode_range = range(1,40)
         do_mask_artifacts = True
         clear_files = True
-        MS4batch.run_pipeline(mda_list, self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
+        MS4batch.run_pipeline([epoch_mda_file], self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
 
     def sortMultiSession(self):
         """
@@ -465,6 +469,10 @@ class MLViewer(QMainWindow):
                 break
             mda_list.append(new_mda_dir)
             print("Added %s."%new_mda_dir)
+
+        if not mda_list:
+            QtHelperUtils.display_warning('Inappropriate MDA(s) specified for sorting!')
+            return
 
         # TODO: Create an input dialog that gets all these properties from the
         # user (dialog can also show all the directories that have been selected.)
