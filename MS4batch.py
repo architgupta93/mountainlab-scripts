@@ -218,7 +218,7 @@ if __name__ == "__main__":
         clear_files = commandline_args.clear_files
 
     tetrode_begin = 1
-    tetrode_end = 40
+    tetrode_end = 64
     if commandline_args.tetrode_begin:
         tetrode_begin = commandline_args.tetrode_begin
 

@@ -451,7 +451,7 @@ class MLViewer(QMainWindow):
             QtHelperUtils.display_warning('Inappropriate MDA specified for sorting!')
             return
 
-        tetrode_range = range(1,40)
+        tetrode_range = range(1,65)
         do_mask_artifacts = True
         clear_files = True
         MS4batch.run_pipeline([epoch_mda_file], self.output_dir, tetrode_range, do_mask_artifacts, clear_files)

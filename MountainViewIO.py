@@ -3,12 +3,16 @@ Utility for reading clustered data from MountainSort. Also extended to perform I
 """
 
 import os
+import sys
 import json
 import errno
 import numpy as np
 import matplotlib.pyplot as plt
 from mountainlab_pytools import mdaio
 from tkinter import Tk, filedialog
+
+# Qt5 imports
+from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QApplication, QDialog, QFileDialog, QMessageBox
 
 # Local imports
 import QtHelperUtils
@@ -224,6 +228,7 @@ def separateSpikesInEpochs(data_dir=None, firings_file='firings.curated.mda', ti
             print(MODULE_IDENTIFIER + 'Unable to read merged firings file for tetrode %s!'%tt_dir)
             print(err)
 
+    # TODO: Change this to also use Qt instead of Tk! Using both libraries seems to make no sense.
     gui_root = Tk()
     gui_root.withdraw()
     timestamp_headers = []
@@ -551,4 +556,12 @@ def loadLFP(data_file=None):
 
 if __name__ == "__main__":
     # By default, extract firings into epochs.
+    qt_args = list()
+    qt_args.append(sys.argv[0])
+    qt_args.append('-style')
+    qt_args.append('Windows')
+    print(MODULE_IDENTIFIER + "Qt Arguments: " + str(qt_args))
+    app = QApplication(qt_args)
+
     separateSpikesInEpochs()
+    sys.exit()
