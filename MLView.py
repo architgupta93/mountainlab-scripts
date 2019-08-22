@@ -33,6 +33,7 @@ import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
 FIRING_CLIP_SIZE = 50
+ACCESS_TIMESTAMPED_FIRINGS = False
 N_ELECTRODE_CHANNELS = 4
 WHITEN_CLIP_DATA = False
 
@@ -85,7 +86,10 @@ class MLViewer(QMainWindow):
         self.firing_data = None
         self.firing_clips = None
         self.firing_amplitudes = None
+        self.currently_selected_clusters = None
         self.clusters = None
+        self.cluster_names = None
+        self.cluster_colors = None
         self.current_tetrode = 0
         self.firing_limits = (-500, 2000)
         self.session_id = 1
@@ -211,15 +215,17 @@ class MLViewer(QMainWindow):
             return
 
         self.clearAxes()
-        for cl_id in self.clusters:
-            spikes_in_cluster = self.firing_data[2] == cl_id
+        for cl_id in self.currently_selected_clusters:
+            spikes_in_cluster = self.clusters[cl_id]
+            # print(spikes_in_cluster)
+
             # These are the 2D plots
-            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=8)
-            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=8)
-            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=8)
-            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=8)
-            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=8)
-            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=8)
+            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=2)
+            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=2)
+            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=2)
+            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=2)
+            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=2)
+            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=2)
         self.canvas.draw()
 
     def fetchTetrodeData(self, _):
@@ -230,7 +236,10 @@ class MLViewer(QMainWindow):
         if self.output_dir is None:
             self.output_dir = QtHelperUtils.get_directory(message="Choose firings data directory.")
         tetrode_dir = os.path.join(self.output_dir, 'nt' + tetrode_id)
-        firings_file = 'firings-' + str(self.session_id) + '.curated.mda'
+        if ACCESS_TIMESTAMPED_FIRINGS:
+            firings_file = 'firings-' + str(self.session_id) + '.curated.mda'
+        else:
+            firings_file = 'firings.curated.mda'
         firings_file_path = os.path.join(tetrode_dir, firings_file)
 
         if not os.path.exists(firings_file_path):
@@ -327,7 +336,12 @@ class MLViewer(QMainWindow):
         # is raw data from mountainsort, then you have the indices readily
         # available to you. Otherwise, need to search for clips in the raw data
         # file by timestamp.
-        spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
+        if ACCESS_TIMESTAMPED_FIRINGS:
+            spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
+        else:
+            spike_indices = np.array(self.firing_data[1], dtype='int')
+            # print(spike_indices)
+
         for spk_idx in range(n_spikes):
             if (spike_indices[spk_idx] < FIRING_CLIP_SIZE) or (spike_indices[spk_idx]+FIRING_CLIP_SIZE>len(self.timestamp_data)):
                 # Unable to get the complete clip for this spike, might as well
@@ -337,19 +351,22 @@ class MLViewer(QMainWindow):
                 print(MODULE_IDENTIFIER + 'WARNING: Unable to read spike clip in data')
                 continue
             self.firing_clips[spk_idx, :, :] = raw_clip_data[:,spike_indices[spk_idx]-FIRING_CLIP_SIZE:spike_indices[spk_idx]+FIRING_CLIP_SIZE]
+            """
             if (raw_clip_data[:,spike_indices[spk_idx]] < 0.0).any():
-                self.firing_amplitudes[spk_idx,:] = -raw_clip_data[:,spike_indices[spk_idx]]
+                self.firing_amplitudes[spk_idx,:] = np.max(raw_clip_data[:,spike_indices[spk_idx]]
             else:
                 self.firing_data[2][spk_idx] = -1
                 self.firing_amplitudes[spk_idx,:] = 0.0
+            """
 
         # Raw data has negative spike amplitudes which need to be corrected.
-        # self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
+        self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
 
         print(self.firing_amplitudes.shape)
         # self.firing_limits = (-500, 2000)
         self.firing_limits = (np.min(self.firing_amplitudes), np.max(self.firing_amplitudes))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
+        del raw_clip_data
 
     def populateTetrodeMenu(self, default_entry=None):
         try:
@@ -367,8 +384,27 @@ class MLViewer(QMainWindow):
 
     def populateUnitMenu(self):
         self.unit_selection.clear()
-        for cl in self.clusters:
+        for cl in self.cluster_names:
             self.unit_selection.addItem(str(cl))
+
+    def getCurrentClusterSelection(self):
+        if self.clusters is None:
+            return
+
+        processing_args = list()
+        for cl_id in self.cluster_names:
+            processing_args.append(str(cl_id))
+        user_choices = QtHelperUtils.CheckBoxWidget(processing_args, message="Select clusters to view").exec_()
+        if user_choices[0] == QDialog.Accepted:
+            if self.currently_selected_clusters is not None:
+                self.currently_selected_clusters.clear()
+            else:
+                self.currently_selected_clusters = list()
+
+            print(user_choices[1])
+            print(self.cluster_names)
+            for accepted_idx in user_choices[1]:
+                self.currently_selected_clusters.append(self.cluster_names[accepted_idx])
 
     def loadFirings(self, _, firings_filename=None):
         """
@@ -385,27 +421,23 @@ class MLViewer(QMainWindow):
             self.populateTetrodeMenu(current_tetrode)
         try:
             self.firing_data = mdaio.readmda(firings_filename)
-            self.clusters = set(self.firing_data[2])
+            self.cluster_names = list()
+            self.clusters = dict()
+            for spike_idx, spike_data in enumerate(np.array(self.firing_data[2], dtype='int')):
+                if spike_data not in self.clusters:
+                    self.cluster_names.append(spike_data)
+                    self.clusters[spike_data] = list()
+                self.clusters[spike_data].append(spike_idx)
+
+            # Assign unique color to each cluster so that the values do not
+            # change as you add or remove them
+
+            # By default set all clusters to be viewable
+            self.getCurrentClusterSelection()
             self.populateUnitMenu()
         except (FileNotFoundError, IOError) as err:
             QtHelperUtils.display_warning('Unable to read MDA file.')
             return
-
-        """
-        curation_file_path = os.path.join(os.path.dirname(firings_filename), 'hand_curated.mv2')
-        try:
-            # Read the curation file for info on spike clusters
-            with open(curation_file_path, 'r') as f:
-                curation_file = json.load(f)
-            # Get all cluster IDs. This includes noise, mua, everything!
-            self.clusters = list()
-            for cl in curation_file['cluster_attributes'].keys():
-                if 'accepted' in curation_file['cluster_attributes'][cl]['tags']:
-                    self.clusters.append(int(cl))
-        except (FileNotFoundError, IOError) as err:
-            print(MODULE_IDENTIFIER + 'Unable to read curation file.')
-            self.clusters = set(self.firing_data[2])
-        """
 
         if not self.show_cluster_widget:
             self.showCluterWidget()
@@ -560,6 +592,10 @@ class MLViewer(QMainWindow):
 
         # =============== PREF MENU =============== 
         preferences_menu = menu_bar.addMenu('Pre&ferences')
+        visible_unit_selection = preferences_menu.addAction('&Visible Units')
+        visible_unit_selection.setStatusTip('Select visible units')
+        visible_unit_selection.triggered.connect(self.getCurrentClusterSelection)
+
         directories_menu = preferences_menu.addMenu('&Directories')
 
         output_dir_selection = directories_menu.addAction('&Output directory')

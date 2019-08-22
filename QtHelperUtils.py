@@ -5,8 +5,9 @@ Commandline argument parsing and other helper functions
 import os
 import sys
 import argparse
-from PyQt5.QtWidgets import QApplication, QMessageBox, QWidget, QFileDialog
-from PyQt5.QtWidgets import QCheckBox, QPushButton
+from PyQt5.QtWidgets import QApplication, QMessageBox, QWidget, QFileDialog, QDialog
+from PyQt5.QtWidgets import QCheckBox, QPushButton, QGridLayout, QVBoxLayout, QDialogButtonBox
+from PyQt5.QtCore import Qt
 from tkinter import Tk, filedialog
 
 USE_QT_FOR_FILEIO = False
@@ -35,35 +36,47 @@ def display_information(info):
     msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
     return msg.exec_()
 
-class CheckBoxWidget(QMessageBox):
+class CheckBoxWidget(QDialog):
   
     """
     Dialog-box containing a number of check-boxes.
     """
 
-    def __init__(self, list_of_elements, message=None):
+    MAX_CHECKBOX_COLUMNS = 2
+    def __init__(self, list_of_elements, message=None, default_choices=None):
         """
         Create the dialog-box with a pre-defined list of elements.
         """
 
-        QMessageBox.__init__(self)
-        self.setIcon(QMessageBox.Information)
+        QDialog.__init__(self)
         if message is not None:
-            self.setText(message)
-        self.setWindowTitle('Message')
+            self.setWindowTitle(message)
+        else:
+            self.setWindowTitle('Message')
         self.checkboxes = list()
 
+        if default_choices is None:
+            n_elements = len(list_of_elements)
+            default_choices = [True for el_idx in range(n_elements)]
+
         # Set up the layout... All the list elements in a single column
-        g_layout = self.layout()
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
 
-        for el in list_of_elements:
+        checkbox_grid = QGridLayout()
+        for idx, el in enumerate(list_of_elements):
             new_checkbox = QCheckBox(el, self)
-            new_checkbox.setChecked(True)
+            new_checkbox.setChecked(default_choices[idx])
             self.checkboxes.append(new_checkbox)
-            g_layout.addWidget(new_checkbox)
+            current_row = idx//self.MAX_CHECKBOX_COLUMNS
+            current_col = idx%self.MAX_CHECKBOX_COLUMNS
+            checkbox_grid.addWidget(new_checkbox, current_row, current_col)
 
-        self.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        self.setDefaultButton(QMessageBox.Ok)
+        g_layout = QVBoxLayout()
+        g_layout.addLayout(checkbox_grid)
+        g_layout.addWidget(self.button_box, alignment=Qt.AlignCenter)
+        self.setLayout(g_layout)
 
     def exec_(self, *args, **kwargs):
         """
