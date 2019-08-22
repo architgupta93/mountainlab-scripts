@@ -117,13 +117,8 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         nt_out_dir = mountain_res_path+'/nt'+str(nt)
         mda_util.make_sure_path_exists(nt_out_dir)
 
-        # If sorting has already happened, move on...
-        if (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE)):
-            print(MODULE_IDENTIFIER + 'Tetrode seems to have been sorted. Continuing...')
-            continue
-
         move_filt_mask_whiten_files = False
-        if not os.path.isfile(nt_out_dir + pyp.PRE_FILENAME):
+        if (not os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)) or (not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME)):
             # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
             # save this to the output dir; it serves as src for subsequent steps
             prv_list=mda_util.get_prv_files_in(nt_src_dir)
@@ -141,11 +136,12 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
                 if clear_files:
                     print(MODULE_IDENTIFIER + "Cleaning RAW, FILT, MASK files.")
                     mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
-                    mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
+                    # Keeping FILT Files for later use.
+                    # mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
                     if do_mask_artifacts:
                         mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
                 else:
-                    mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+                    # mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
                     if do_mask_artifacts:
                         mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
                 move_filt_mask_whiten_files = True
@@ -154,6 +150,11 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         else:
             print(MODULE_IDENTIFIER + "PRE file with concatenated epochs found. Using file!")
         
+        # If sorting has already happened, move on...
+        if (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE)):
+            print(MODULE_IDENTIFIER + 'Tetrode %d seems to have been sorted. Continuing...'%nt)
+            continue
+
         # run the actual sort
         if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
             if n_epochs_to_sort > 1:
@@ -187,6 +188,8 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
 
         if move_filt_mask_whiten_files:
             mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
+            mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+    print(MODULE_IDENTIFIER + "Sorting Complete!")
 
 if __name__ == "__main__":
     commandline_args = commandline.parse_commandline_arguments()
