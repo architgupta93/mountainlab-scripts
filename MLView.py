@@ -32,7 +32,9 @@ import MountainViewIO
 import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
-FIRING_CLIP_SIZE = 50
+FIRING_CLIP_SIZE = 32
+FIRING_PRE_CLIP = 8
+FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
 ACCESS_TIMESTAMPED_FIRINGS = False
 N_ELECTRODE_CHANNELS = 4
 WHITEN_CLIP_DATA = False
@@ -328,7 +330,7 @@ class MLViewer(QMainWindow):
 
         n_spikes = len(self.firing_data[1])
         self.firing_clips = np.empty((n_spikes, N_ELECTRODE_CHANNELS, \
-                FIRING_CLIP_SIZE+FIRING_CLIP_SIZE), dtype=float)
+                FIRING_CLIP_SIZE), dtype=float)
         self.firing_amplitudes = np.empty((n_spikes, N_ELECTRODE_CHANNELS), \
                 dtype=float)
 
@@ -343,14 +345,14 @@ class MLViewer(QMainWindow):
             # print(spike_indices)
 
         for spk_idx in range(n_spikes):
-            if (spike_indices[spk_idx] < FIRING_CLIP_SIZE) or (spike_indices[spk_idx]+FIRING_CLIP_SIZE>len(self.timestamp_data)):
+            if (spike_indices[spk_idx] < FIRING_PRE_CLIP) or (spike_indices[spk_idx]+FIRING_POST_CLIP>len(self.timestamp_data)):
                 # Unable to get the complete clip for this spike, might as well
                 # ignore it... This shouldn't be so common though!
                 self.firing_clips[spk_idx, :, :] = 0.0
                 self.firing_amplitudes[spk_idx, :] = 0.0
                 print(MODULE_IDENTIFIER + 'WARNING: Unable to read spike clip in data')
                 continue
-            self.firing_clips[spk_idx, :, :] = raw_clip_data[:,spike_indices[spk_idx]-FIRING_CLIP_SIZE:spike_indices[spk_idx]+FIRING_CLIP_SIZE]
+            self.firing_clips[spk_idx, :, :] = raw_clip_data[:,spike_indices[spk_idx]-FIRING_PRE_CLIP:spike_indices[spk_idx]+FIRING_POST_CLIP]
             """
             if (raw_clip_data[:,spike_indices[spk_idx]] < 0.0).any():
                 self.firing_amplitudes[spk_idx,:] = np.max(raw_clip_data[:,spike_indices[spk_idx]]
@@ -359,7 +361,22 @@ class MLViewer(QMainWindow):
                 self.firing_amplitudes[spk_idx,:] = 0.0
             """
 
+        for example_idx in range(100,200):
+            plt.subplot(221)
+            plt.plot(self.firing_clips[example_idx,0,:])
+
+            plt.subplot(222)
+            plt.plot(self.firing_clips[example_idx,1,:])
+
+            plt.subplot(223)
+            plt.plot(self.firing_clips[example_idx,2,:])
+
+            plt.subplot(224)
+            plt.plot(self.firing_clips[example_idx,3,:])
+            plt.show()
+
         # Raw data has negative spike amplitudes which need to be corrected.
+        # self.firing_amplitudes = np.max(self.firing_clips, axis=2)
         self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
 
         print(self.firing_amplitudes.shape)
