@@ -102,7 +102,7 @@ class MLViewer(QMainWindow):
         self.widget  = QDialog()
         self.figure  = Figure(figsize=(12,12))
         self.canvas  = FigureCanvas(self.figure)
-        plot_grid    = gridspec.GridSpec(3, 2)
+        plot_grid    = gridspec.GridSpec(2, 3)
         self.toolbar = NavigationToolbar(self.canvas, self.widget)
 
         self._ax_ch1v2 = self.figure.add_subplot(plot_grid[0])
@@ -140,7 +140,7 @@ class MLViewer(QMainWindow):
         self.show_cluster_widget = True
         self.setupWidgetLayout()
         self.setCentralWidget(self.widget)
-        self.setGeometry(100, 100, 900, 900)
+        self.setGeometry(100, 100, 1000, 750)
         self.clearAxes()
 
     def clearAxes(self):
@@ -151,31 +151,43 @@ class MLViewer(QMainWindow):
         self._ax_ch1v2.grid(True)
         self._ax_ch1v2.set_xlim(self.firing_limits)
         self._ax_ch1v2.set_ylim(self.firing_limits)
+        self._ax_ch1v2.set_xticks([])
+        self._ax_ch1v2.set_yticks([])
 
         self._ax_ch1v3.cla()
         self._ax_ch1v3.grid(True)
         self._ax_ch1v3.set_xlim(self.firing_limits)
         self._ax_ch1v3.set_ylim(self.firing_limits)
+        self._ax_ch1v3.set_xticks([])
+        self._ax_ch1v3.set_yticks([])
 
         self._ax_ch1v4.cla()
         self._ax_ch1v4.grid(True)
         self._ax_ch1v4.set_xlim(self.firing_limits)
         self._ax_ch1v4.set_ylim(self.firing_limits)
+        self._ax_ch1v4.set_xticks([])
+        self._ax_ch1v4.set_yticks([])
 
         self._ax_ch2v3.cla()
         self._ax_ch2v3.grid(True)
         self._ax_ch2v3.set_xlim(self.firing_limits)
         self._ax_ch2v3.set_ylim(self.firing_limits)
+        self._ax_ch2v3.set_xticks([])
+        self._ax_ch2v3.set_yticks([])
 
         self._ax_ch2v4.cla()
         self._ax_ch2v4.grid(True)
         self._ax_ch2v4.set_xlim(self.firing_limits)
         self._ax_ch2v4.set_ylim(self.firing_limits)
+        self._ax_ch2v4.set_xticks([])
+        self._ax_ch2v4.set_yticks([])
  
         self._ax_ch3v4.cla()
         self._ax_ch3v4.grid(True)
         self._ax_ch3v4.set_xlim(self.firing_limits)
         self._ax_ch3v4.set_ylim(self.firing_limits)
+        self._ax_ch3v4.set_xticks([])
+        self._ax_ch3v4.set_yticks([])
 
     def setupWidgetLayout(self):
         parent_layout_box = QVBoxLayout()
@@ -301,7 +313,7 @@ class MLViewer(QMainWindow):
         try:
             # raw_clip_data = normalize(mdaio.readmda(clips_file), axis=1)
             # raw_clip_data = mdaio.readmda(clips_file)
-            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 200, 6000, \
+            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 600, 6000, \
                     MountainViewIO.SPIKE_SAMPLING_RATE)
             print(MODULE_IDENTIFIER + 'Filtered clip data...')
             if WHITEN_CLIP_DATA:
@@ -406,9 +418,18 @@ class MLViewer(QMainWindow):
         if self.clusters is None:
             return
 
+        default_selection_choice = list()
         processing_args = list()
         for cl_id in self.cluster_names:
             processing_args.append(str(cl_id))
+
+            # Retain the previously selected clusters so that the user does not
+            # have to remember them
+            if self.currently_selected_clusters is None:
+                default_selection_choice.append(True)
+            else:
+                default_selection_choice.append(cl_id in self.currently_selected_clusters)
+
         user_choices = QtHelperUtils.CheckBoxWidget(processing_args, message="Select clusters to view").exec_()
         if user_choices[0] == QDialog.Accepted:
             if self.currently_selected_clusters is not None:
