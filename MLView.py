@@ -93,7 +93,7 @@ class MLViewer(QMainWindow):
         self.cluster_names = None
         self.cluster_colors = None
         self.current_tetrode = 0
-        self.firing_limits = (-500, 2000)
+        self.firing_limits = (-500, 3000)
         self.session_id = 1
         self.timestamp_file = None
         self.timestamp_data = None
@@ -140,7 +140,7 @@ class MLViewer(QMainWindow):
         self.show_cluster_widget = True
         self.setupWidgetLayout()
         self.setCentralWidget(self.widget)
-        self.setGeometry(100, 100, 1200, 1200)
+        self.setGeometry(100, 100, 900, 900)
         self.clearAxes()
 
     def clearAxes(self):
@@ -301,7 +301,7 @@ class MLViewer(QMainWindow):
         try:
             # raw_clip_data = normalize(mdaio.readmda(clips_file), axis=1)
             # raw_clip_data = mdaio.readmda(clips_file)
-            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 500, 5000, \
+            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 200, 6000, \
                     MountainViewIO.SPIKE_SAMPLING_RATE)
             print(MODULE_IDENTIFIER + 'Filtered clip data...')
             if WHITEN_CLIP_DATA:
@@ -344,6 +344,7 @@ class MLViewer(QMainWindow):
             spike_indices = np.array(self.firing_data[1], dtype='int')
             # print(spike_indices)
 
+
         for spk_idx in range(n_spikes):
             if (spike_indices[spk_idx] < FIRING_PRE_CLIP) or (spike_indices[spk_idx]+FIRING_POST_CLIP>len(self.timestamp_data)):
                 # Unable to get the complete clip for this spike, might as well
@@ -353,13 +354,14 @@ class MLViewer(QMainWindow):
                 print(MODULE_IDENTIFIER + 'WARNING: Unable to read spike clip in data')
                 continue
             self.firing_clips[spk_idx, :, :] = raw_clip_data[:,spike_indices[spk_idx]-FIRING_PRE_CLIP:spike_indices[spk_idx]+FIRING_POST_CLIP]
-            """
-            if (raw_clip_data[:,spike_indices[spk_idx]] < 0.0).any():
-                self.firing_amplitudes[spk_idx,:] = np.max(raw_clip_data[:,spike_indices[spk_idx]]
-            else:
-                self.firing_data[2][spk_idx] = -1
-                self.firing_amplitudes[spk_idx,:] = 0.0
-            """
+            # Raw data has negative spike amplitudes which need to be corrected.
+            # self.firing_amplitudes = np.max(self.firing_clips, axis=2)
+
+            # The index we get here will be for the spike peak in the entrie
+            # 4 x clip data. We need to convert it into a (channel,sample_value)
+            peak_amplitude_idx = np.argmin(self.firing_clips[spk_idx,:,:])
+            peak_sample_loc    = np.unravel_index(peak_amplitude_idx, (N_ELECTRODE_CHANNELS, FIRING_CLIP_SIZE))
+            self.firing_amplitudes[spk_idx,:] = -self.firing_clips[spk_idx,:,peak_sample_loc[1]]
 
         for example_idx in range(100,200):
             plt.subplot(221)
@@ -375,13 +377,9 @@ class MLViewer(QMainWindow):
             plt.plot(self.firing_clips[example_idx,3,:])
             plt.show()
 
-        # Raw data has negative spike amplitudes which need to be corrected.
-        # self.firing_amplitudes = np.max(self.firing_clips, axis=2)
-        self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
-
         print(self.firing_amplitudes.shape)
-        # self.firing_limits = (-500, 2000)
-        self.firing_limits = (np.min(self.firing_amplitudes), np.max(self.firing_amplitudes))
+        self.firing_limits = (-500, 3000)
+        # self.firing_limits = (np.min(self.firing_amplitudes), np.max(self.firing_amplitudes))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
         del raw_clip_data
 
