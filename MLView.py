@@ -234,12 +234,12 @@ class MLViewer(QMainWindow):
             # print(spikes_in_cluster)
 
             # These are the 2D plots
-            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=2)
-            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=2)
-            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=2)
-            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=2)
-            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=2)
-            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=2)
+            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=1)
+            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=1)
+            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=1)
+            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=1)
+            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=1)
+            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=1)
         self.canvas.draw()
 
     def fetchTetrodeData(self, _):
@@ -375,6 +375,7 @@ class MLViewer(QMainWindow):
             peak_sample_loc    = np.unravel_index(peak_amplitude_idx, (N_ELECTRODE_CHANNELS, FIRING_CLIP_SIZE))
             self.firing_amplitudes[spk_idx,:] = -self.firing_clips[spk_idx,:,peak_sample_loc[1]]
 
+        """
         for example_idx in range(100,200):
             plt.subplot(221)
             plt.plot(self.firing_clips[example_idx,0,:])
@@ -388,6 +389,7 @@ class MLViewer(QMainWindow):
             plt.subplot(224)
             plt.plot(self.firing_clips[example_idx,3,:])
             plt.show()
+        """
 
         print(self.firing_amplitudes.shape)
         self.firing_limits = (-500, 3000)
@@ -430,7 +432,8 @@ class MLViewer(QMainWindow):
             else:
                 default_selection_choice.append(cl_id in self.currently_selected_clusters)
 
-        user_choices = QtHelperUtils.CheckBoxWidget(processing_args, message="Select clusters to view").exec_()
+        user_choices = QtHelperUtils.CheckBoxWidget(processing_args, message="Select clusters to view", \
+                default_choices=default_selection_choice).exec_()
         if user_choices[0] == QDialog.Accepted:
             if self.currently_selected_clusters is not None:
                 self.currently_selected_clusters.clear()
