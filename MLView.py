@@ -15,6 +15,7 @@ from scipy.signal import butter, lfilter
 from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QApplication, QDialog, QFileDialog, QMessageBox
 from PyQt5.QtWidgets import QPushButton, QSlider, QRadioButton, QLabel, QInputDialog
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout, QComboBox
+from PyQt5.QtCore import Qt
 
 # Matplotlib in Qt5
 from mpl_toolkits.mplot3d import Axes3D
@@ -139,6 +140,13 @@ class MLViewer(QMainWindow):
 
         if self.data_dir is not None:
             self.populateTetrodeMenu()
+
+    def keyPressEvent(self, e):
+        # The following keys are forwarded by the completer to the widget.
+        if e.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab):
+            e.ignore()
+            # Let the completer do default behavior.
+            return
 
     def showCluterWidget(self):
         self.show_cluster_widget = True
@@ -354,15 +362,16 @@ class MLViewer(QMainWindow):
         # is raw data from mountainsort, then you have the indices readily
         # available to you. Otherwise, need to search for clips in the raw data
         # file by timestamp.
-        print("Selection")
+
         # spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
         if self.access_timestamped_firings:
             spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
             print(self.timestamp_data)
             print(spike_indices)
-            print("Timestamped")
+            print(MODULE_IDENTIFIER + "Timestamped clips extracted")
         else:
             spike_indices = np.array(self.firing_data[1], dtype='int')
+            print(MODULE_IDENTIFIER + "Indexed clips extracted")
             # print(spike_indices)
 
 
@@ -409,10 +418,32 @@ class MLViewer(QMainWindow):
         for cl in self.cluster_names:
             self.unit_selection.addItem(str(cl))
 
+    def saveScreenshot(self):
+        """
+        Save the current screen content as an image
+        """
+        # Create a filename
+        # The custom name feature is already present in the navigation toolbar. This function can be used to save data programatically
+        # save_file_name = QtHelperUtils.get_save_file_name(data_dir=self.output_dir, file_format='Image File (*.jpg)', message="Choose a screenshot name")
+        save_file_name = time.strftime("T" + str(self.tetrode_selection.currentText()) + "U" + str(self.unit_selection.currentText()) + "_%Y%m%d_%H%M%S.png") 
+        save_success = False
+        try:
+            self.figure.savefig(save_file_name)
+            save_success = True
+        except Exception as err:
+            print(MODULE_IDENTIFIER + "Unable to save current display.")
+            print(err)
+
+        if save_success:
+            self.statusBar().showMessage("Screenshot saved to %s"%save_file_name)
+
     def showExampleWaveforms(self):
         """
         Show example waveforms from the current spike selection.
         """
+        if self.firing_clips is None:
+            QtHelperUtils.display_warning("Clip data not loaded to extract example waveforms from.")
+            return
 
         # TODO: Account for the spieks that are being shown at the moment.
         # For now, we are just showing a random set of spikes to make sure that things look sane
@@ -454,7 +485,7 @@ class MLViewer(QMainWindow):
             else:
                 self.currently_selected_clusters = list()
 
-            print(user_choices[1])
+            print(MODULE_IDENTIFIER + "Selected clusters are...")
             print(self.cluster_names)
             for accepted_idx in user_choices[1]:
                 self.currently_selected_clusters.append(self.cluster_names[accepted_idx])
@@ -576,6 +607,20 @@ class MLViewer(QMainWindow):
         """
         QtHelperUtils.display_warning('Function not implemented!')
 
+    def clearData(self):
+        self.firing_data = None
+        self.firing_clips = None
+        self.firing_amplitudes = None
+        self.currently_selected_clusters = None
+        self.clusters = None
+        self.cluster_names = None
+        self.cluster_colors = None
+        self.current_tetrode = 0
+        self.firing_limits = (-500, 3000)
+        self.session_id = 1
+        self.timestamp_file = None
+        self.timestamp_data = None
+
     def selectOutputDirectory(self):
         """
         Select a new output directory.
@@ -609,8 +654,16 @@ class MLViewer(QMainWindow):
         qt_mview_action.setShortcut('Ctrl+M')
         qt_mview_action.triggered.connect(self.launchMountainView)
 
+        # Clear all the data stored presently
+        clear_action = file_menu.addAction('&Clear')
+        clear_action.setStatusTip('Clear/Reset all the data saved in the application')
+        clear_action.triggered.connect(self.clearData)
+
         # =============== SAVE MENU =============== 
         save_menu = file_menu.addMenu('&Save')
+        save_screenshot_menu = save_menu.addAction('&Screenshot')
+        save_screenshot_menu.setStatusTip('Save current view to computer')
+        save_screenshot_menu.triggered.connect(self.saveScreenshot)
 
         # =============== LOAD MENU =============== 
         open_menu = file_menu.addMenu('&Load')
