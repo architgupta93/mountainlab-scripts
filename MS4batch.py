@@ -129,7 +129,7 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
             else:
                 print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
             
-            # preprocessing: filter, mask out artifacts, whiten
+            # preprocessing: filter, mask out artifacts whiten
             if not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
                 pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                         mask_artifacts=do_mask_artifacts,opts={})
@@ -153,16 +153,15 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         # If sorting has already happened, move on...
         if (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE)):
             print(MODULE_IDENTIFIER + 'Tetrode %d seems to have been sorted. Continuing...'%nt)
-            continue
-
-        # run the actual sort
-        if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
-            if n_epochs_to_sort > 1:
-                pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
-            else:
-                pyp.ms4_sort_full(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
         else:
-            print(MODULE_IDENTIFIER + "Firings and raw cluster metrics file with concatenated epochs found. Using file!")
+            # run the actual sort
+            if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
+                if n_epochs_to_sort > 1:
+                    pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+                else:
+                    pyp.ms4_sort_full(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+            else:
+                print(MODULE_IDENTIFIER + "Firings and raw cluster metrics file with concatenated epochs found. Using file!")
 
         if not os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE):
             pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
@@ -176,9 +175,8 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
 
         pyp.cleanup_metrics(metrics_file=nt_out_dir+'/metrics_tagged.json', metrics_out=nt_out_dir+'/metrics_cleaned.json')
         # Generate templates for MountainView
-        if not (os.path.isfile(nt_out_dir + pyp.TEMPLATES_FILE) and
-                os.path.isfile(nt_out_dir + pyp.TEMPLATE_STDS_FILE) and
-                os.path.isfile(nt_out_dir + pyp.AMPLITUDES_FILE)):
+        if not (os.path.isfile(nt_out_dir + pyp.TEMPLATES_FILE) and\
+                os.path.isfile(nt_out_dir + pyp.TEMPLATE_STDS_FILE)):
             pyp.generate_templates(dataset_dir=nt_out_dir, output_dir=nt_out_dir, metrics_file=nt_out_dir+'/metrics_cleaned.json', opts={})
         else:
             print(MODULE_IDENTIFIER + "Templates file found. Using file!")

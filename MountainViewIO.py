@@ -229,15 +229,16 @@ def separateSpikesInEpochs(data_dir=None, firings_file='firings.curated.mda', ti
             print(err)
 
     # TODO: Change this to also use Qt instead of Tk! Using both libraries seems to make no sense.
-    gui_root = Tk()
-    gui_root.withdraw()
     timestamp_headers = []
     if timestamp_files is None:
+        timestamp_files = list()
         # Read all the timestamp files
-        timestamp_files = filedialog.askopenfilenames(initialdir=DEFAULT_SEARCH_PATH, \
-                title="Select all timestamp files", \
-                filetypes=(("Timestamps", ".mda"), ("All Files", "*.*")))
-    gui_root.destroy()
+        while True:
+            new_timestamp_file = QtHelperUtils.get_open_file_name(data_dir=DEFAULT_SEARCH_PATH, \
+                    file_format='Timestamps (*.mda)', message="Select all timestamp files IN ORDER")
+            if not new_timestamp_file:
+                break
+            timestamp_files.append(new_timestamp_file)
 
     for ts_file in timestamp_files:
         timestamp_headers.append(mdaio.readmda_header(ts_file))

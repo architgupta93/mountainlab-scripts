@@ -32,8 +32,10 @@ import MountainViewIO
 import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
-FIRING_CLIP_SIZE = 50
-ACCESS_TIMESTAMPED_FIRINGS = False
+DEFAULT_ACCESS_TIMESTAMPED_SPIKES = False
+FIRING_CLIP_SIZE = 32
+FIRING_PRE_CLIP = 8
+FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
 N_ELECTRODE_CHANNELS = 4
 WHITEN_CLIP_DATA = False
 
@@ -59,6 +61,9 @@ class MLViewer(QMainWindow):
         QMainWindow.__init__(self)
         self.setWindowTitle('Mountainsort Helper/Viewer')
         self.statusBar().showMessage('Load or create firings file from File Menu.')
+
+        # The menu item that controls our looking for timestamps in spike mda files.
+        self.access_tstamped_selection = None
         self.setupMenus()
 
         # Tetrode info fields
@@ -83,6 +88,7 @@ class MLViewer(QMainWindow):
             self.raw_data_location = None
 
         # Data entries
+        self.access_timestamped_firings = DEFAULT_ACCESS_TIMESTAMPED_SPIKES
         self.firing_data = None
         self.firing_clips = None
         self.firing_amplitudes = None
@@ -91,7 +97,7 @@ class MLViewer(QMainWindow):
         self.cluster_names = None
         self.cluster_colors = None
         self.current_tetrode = 0
-        self.firing_limits = (-500, 2000)
+        self.firing_limits = (-500, 3000)
         self.session_id = 1
         self.timestamp_file = None
         self.timestamp_data = None
@@ -100,7 +106,7 @@ class MLViewer(QMainWindow):
         self.widget  = QDialog()
         self.figure  = Figure(figsize=(12,12))
         self.canvas  = FigureCanvas(self.figure)
-        plot_grid    = gridspec.GridSpec(3, 2)
+        plot_grid    = gridspec.GridSpec(2, 3)
         self.toolbar = NavigationToolbar(self.canvas, self.widget)
 
         self._ax_ch1v2 = self.figure.add_subplot(plot_grid[0])
@@ -138,7 +144,7 @@ class MLViewer(QMainWindow):
         self.show_cluster_widget = True
         self.setupWidgetLayout()
         self.setCentralWidget(self.widget)
-        self.setGeometry(100, 100, 1200, 1200)
+        self.setGeometry(100, 100, 1000, 750)
         self.clearAxes()
 
     def clearAxes(self):
@@ -149,31 +155,43 @@ class MLViewer(QMainWindow):
         self._ax_ch1v2.grid(True)
         self._ax_ch1v2.set_xlim(self.firing_limits)
         self._ax_ch1v2.set_ylim(self.firing_limits)
+        self._ax_ch1v2.set_xticklabels([])
+        self._ax_ch1v2.set_yticklabels([])
 
         self._ax_ch1v3.cla()
         self._ax_ch1v3.grid(True)
         self._ax_ch1v3.set_xlim(self.firing_limits)
         self._ax_ch1v3.set_ylim(self.firing_limits)
+        self._ax_ch1v3.set_xticklabels([])
+        self._ax_ch1v3.set_yticklabels([])
 
         self._ax_ch1v4.cla()
         self._ax_ch1v4.grid(True)
         self._ax_ch1v4.set_xlim(self.firing_limits)
         self._ax_ch1v4.set_ylim(self.firing_limits)
+        self._ax_ch1v4.set_xticklabels([])
+        self._ax_ch1v4.set_yticklabels([])
 
         self._ax_ch2v3.cla()
         self._ax_ch2v3.grid(True)
         self._ax_ch2v3.set_xlim(self.firing_limits)
         self._ax_ch2v3.set_ylim(self.firing_limits)
+        self._ax_ch2v3.set_xticklabels([])
+        self._ax_ch2v3.set_yticklabels([])
 
         self._ax_ch2v4.cla()
         self._ax_ch2v4.grid(True)
         self._ax_ch2v4.set_xlim(self.firing_limits)
         self._ax_ch2v4.set_ylim(self.firing_limits)
+        self._ax_ch2v4.set_xticklabels([])
+        self._ax_ch2v4.set_yticklabels([])
  
         self._ax_ch3v4.cla()
         self._ax_ch3v4.grid(True)
         self._ax_ch3v4.set_xlim(self.firing_limits)
         self._ax_ch3v4.set_ylim(self.firing_limits)
+        self._ax_ch3v4.set_xticklabels([])
+        self._ax_ch3v4.set_yticklabels([])
 
     def setupWidgetLayout(self):
         parent_layout_box = QVBoxLayout()
@@ -220,12 +238,12 @@ class MLViewer(QMainWindow):
             # print(spikes_in_cluster)
 
             # These are the 2D plots
-            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=2)
-            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=2)
-            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=2)
-            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=2)
-            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=2)
-            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=2)
+            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=1)
+            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=1)
+            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=1)
+            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=1)
+            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=1)
+            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=1)
         self.canvas.draw()
 
     def fetchTetrodeData(self, _):
@@ -236,7 +254,7 @@ class MLViewer(QMainWindow):
         if self.output_dir is None:
             self.output_dir = QtHelperUtils.get_directory(message="Choose firings data directory.")
         tetrode_dir = os.path.join(self.output_dir, 'nt' + tetrode_id)
-        if ACCESS_TIMESTAMPED_FIRINGS:
+        if self.access_timestamped_firingS:
             firings_file = 'firings-' + str(self.session_id) + '.curated.mda'
         else:
             firings_file = 'firings.curated.mda'
@@ -299,7 +317,7 @@ class MLViewer(QMainWindow):
         try:
             # raw_clip_data = normalize(mdaio.readmda(clips_file), axis=1)
             # raw_clip_data = mdaio.readmda(clips_file)
-            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 500, 5000, \
+            filtered_clip_data = butter_bandpass_filter(mdaio.readmda(clips_file), 600, 6000, \
                     MountainViewIO.SPIKE_SAMPLING_RATE)
             print(MODULE_IDENTIFIER + 'Filtered clip data...')
             if WHITEN_CLIP_DATA:
@@ -328,7 +346,7 @@ class MLViewer(QMainWindow):
 
         n_spikes = len(self.firing_data[1])
         self.firing_clips = np.empty((n_spikes, N_ELECTRODE_CHANNELS, \
-                FIRING_CLIP_SIZE+FIRING_CLIP_SIZE), dtype=float)
+                FIRING_CLIP_SIZE), dtype=float)
         self.firing_amplitudes = np.empty((n_spikes, N_ELECTRODE_CHANNELS), \
                 dtype=float)
 
@@ -336,35 +354,39 @@ class MLViewer(QMainWindow):
         # is raw data from mountainsort, then you have the indices readily
         # available to you. Otherwise, need to search for clips in the raw data
         # file by timestamp.
-        if ACCESS_TIMESTAMPED_FIRINGS:
+        print("Selection")
+        # spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
+        if self.access_timestamped_firings:
             spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
+            print(self.timestamp_data)
+            print(spike_indices)
+            print("Timestamped")
         else:
             spike_indices = np.array(self.firing_data[1], dtype='int')
             # print(spike_indices)
 
+
         for spk_idx in range(n_spikes):
-            if (spike_indices[spk_idx] < FIRING_CLIP_SIZE) or (spike_indices[spk_idx]+FIRING_CLIP_SIZE>len(self.timestamp_data)):
+            if (spike_indices[spk_idx] < FIRING_PRE_CLIP) or (spike_indices[spk_idx]+FIRING_POST_CLIP>len(self.timestamp_data)):
                 # Unable to get the complete clip for this spike, might as well
                 # ignore it... This shouldn't be so common though!
                 self.firing_clips[spk_idx, :, :] = 0.0
                 self.firing_amplitudes[spk_idx, :] = 0.0
                 print(MODULE_IDENTIFIER + 'WARNING: Unable to read spike clip in data')
                 continue
-            self.firing_clips[spk_idx, :, :] = raw_clip_data[:,spike_indices[spk_idx]-FIRING_CLIP_SIZE:spike_indices[spk_idx]+FIRING_CLIP_SIZE]
-            """
-            if (raw_clip_data[:,spike_indices[spk_idx]] < 0.0).any():
-                self.firing_amplitudes[spk_idx,:] = np.max(raw_clip_data[:,spike_indices[spk_idx]]
-            else:
-                self.firing_data[2][spk_idx] = -1
-                self.firing_amplitudes[spk_idx,:] = 0.0
-            """
+            self.firing_clips[spk_idx, :, :] = raw_clip_data[:,spike_indices[spk_idx]-FIRING_PRE_CLIP:spike_indices[spk_idx]+FIRING_POST_CLIP]
+            # Raw data has negative spike amplitudes which need to be corrected.
+            # self.firing_amplitudes = np.max(self.firing_clips, axis=2)
 
-        # Raw data has negative spike amplitudes which need to be corrected.
-        self.firing_amplitudes = -np.min(self.firing_clips, axis=2)
+            # The index we get here will be for the spike peak in the entrie
+            # 4 x clip data. We need to convert it into a (channel,sample_value)
+            peak_amplitude_idx = np.argmin(self.firing_clips[spk_idx,:,:])
+            peak_sample_loc    = np.unravel_index(peak_amplitude_idx, (N_ELECTRODE_CHANNELS, FIRING_CLIP_SIZE))
+            self.firing_amplitudes[spk_idx,:] = -self.firing_clips[spk_idx,:,peak_sample_loc[1]]
 
         print(self.firing_amplitudes.shape)
-        # self.firing_limits = (-500, 2000)
-        self.firing_limits = (np.min(self.firing_amplitudes), np.max(self.firing_amplitudes))
+        self.firing_limits = (max(-500,np.min(self.firing_amplitudes)), \
+                min(3000,np.max(self.firing_amplitudes)))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
         del raw_clip_data
 
@@ -387,14 +409,45 @@ class MLViewer(QMainWindow):
         for cl in self.cluster_names:
             self.unit_selection.addItem(str(cl))
 
+    def showExampleWaveforms(self):
+        """
+        Show example waveforms from the current spike selection.
+        """
+
+        # TODO: Account for the spieks that are being shown at the moment.
+        # For now, we are just showing a random set of spikes to make sure that things look sane
+        for example_idx in range(100,200):
+            plt.subplot(221)
+            plt.plot(self.firing_clips[example_idx,0,:])
+
+            plt.subplot(222)
+            plt.plot(self.firing_clips[example_idx,1,:])
+
+            plt.subplot(223)
+            plt.plot(self.firing_clips[example_idx,2,:])
+
+            plt.subplot(224)
+            plt.plot(self.firing_clips[example_idx,3,:])
+            plt.show()
+
     def getCurrentClusterSelection(self):
         if self.clusters is None:
             return
 
+        default_selection_choice = list()
         processing_args = list()
         for cl_id in self.cluster_names:
             processing_args.append(str(cl_id))
-        user_choices = QtHelperUtils.CheckBoxWidget(processing_args, message="Select clusters to view").exec_()
+
+            # Retain the previously selected clusters so that the user does not
+            # have to remember them
+            if self.currently_selected_clusters is None:
+                default_selection_choice.append(True)
+            else:
+                default_selection_choice.append(cl_id in self.currently_selected_clusters)
+
+        user_choices = QtHelperUtils.CheckBoxWidget(processing_args, message="Select clusters to view", \
+                default_choices=default_selection_choice).exec_()
         if user_choices[0] == QDialog.Accepted:
             if self.currently_selected_clusters is not None:
                 self.currently_selected_clusters.clear()
@@ -442,6 +495,10 @@ class MLViewer(QMainWindow):
         if not self.show_cluster_widget:
             self.showCluterWidget()
         self.statusBar().showMessage('Firing data loaded from ' + firings_filename)
+
+    def toggleTimestampedSikes(self, state):
+        self.access_tstamped_selection.setChecked(state)
+        self.access_timestamped_firings = state
 
     def loadClusterFile(self, _):
         """
@@ -589,6 +646,9 @@ class MLViewer(QMainWindow):
         multi_session_sort.triggered.connect(self.sortMultiSession)
         # =============== PLOT MENU =============== 
         plot_menu = menu_bar.addMenu('&Plot')
+        example_waveforms_menu = plot_menu.addAction('&Example Waveforms')
+        example_waveforms_menu.setStatusTip('Show example waveforms from the current spike selection.')
+        example_waveforms_menu.triggered.connect(self.showExampleWaveforms)
 
         # =============== PREF MENU =============== 
         preferences_menu = menu_bar.addMenu('Pre&ferences')
@@ -596,8 +656,13 @@ class MLViewer(QMainWindow):
         visible_unit_selection.setStatusTip('Select visible units')
         visible_unit_selection.triggered.connect(self.getCurrentClusterSelection)
 
-        directories_menu = preferences_menu.addMenu('&Directories')
+        self.access_tstamped_selection = QAction('&Timestamped Spike Data', self, checkable=True)
+        self.access_tstamped_selection.setStatusTip('Assume that spike MDAs have timestamps instead of time indices.')
+        self.access_tstamped_selection.setChecked(DEFAULT_ACCESS_TIMESTAMPED_SPIKES)
+        self.access_tstamped_selection.triggered.connect(self.toggleTimestampedSikes)
+        preferences_menu.addAction(self.access_tstamped_selection)
 
+        directories_menu = preferences_menu.addMenu('&Directories')
         output_dir_selection = directories_menu.addAction('&Output directory')
         output_dir_selection.triggered.connect(self.selectOutputDirectory)
 
