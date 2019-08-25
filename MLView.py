@@ -32,10 +32,10 @@ import MountainViewIO
 import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
+DEFAULT_ACCESS_TIMESTAMPED_SPIKES = False
 FIRING_CLIP_SIZE = 32
 FIRING_PRE_CLIP = 8
 FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
-ACCESS_TIMESTAMPED_FIRINGS = False
 N_ELECTRODE_CHANNELS = 4
 WHITEN_CLIP_DATA = False
 
@@ -61,6 +61,9 @@ class MLViewer(QMainWindow):
         QMainWindow.__init__(self)
         self.setWindowTitle('Mountainsort Helper/Viewer')
         self.statusBar().showMessage('Load or create firings file from File Menu.')
+
+        # The menu item that controls our looking for timestamps in spike mda files.
+        self.access_tstamped_selection = None
         self.setupMenus()
 
         # Tetrode info fields
@@ -85,6 +88,7 @@ class MLViewer(QMainWindow):
             self.raw_data_location = None
 
         # Data entries
+        self.access_timestamped_firings = DEFAULT_ACCESS_TIMESTAMPED_SPIKES
         self.firing_data = None
         self.firing_clips = None
         self.firing_amplitudes = None
@@ -151,43 +155,43 @@ class MLViewer(QMainWindow):
         self._ax_ch1v2.grid(True)
         self._ax_ch1v2.set_xlim(self.firing_limits)
         self._ax_ch1v2.set_ylim(self.firing_limits)
-        self._ax_ch1v2.set_xticks([])
-        self._ax_ch1v2.set_yticks([])
+        self._ax_ch1v2.set_xticklabels([])
+        self._ax_ch1v2.set_yticklabels([])
 
         self._ax_ch1v3.cla()
         self._ax_ch1v3.grid(True)
         self._ax_ch1v3.set_xlim(self.firing_limits)
         self._ax_ch1v3.set_ylim(self.firing_limits)
-        self._ax_ch1v3.set_xticks([])
-        self._ax_ch1v3.set_yticks([])
+        self._ax_ch1v3.set_xticklabels([])
+        self._ax_ch1v3.set_yticklabels([])
 
         self._ax_ch1v4.cla()
         self._ax_ch1v4.grid(True)
         self._ax_ch1v4.set_xlim(self.firing_limits)
         self._ax_ch1v4.set_ylim(self.firing_limits)
-        self._ax_ch1v4.set_xticks([])
-        self._ax_ch1v4.set_yticks([])
+        self._ax_ch1v4.set_xticklabels([])
+        self._ax_ch1v4.set_yticklabels([])
 
         self._ax_ch2v3.cla()
         self._ax_ch2v3.grid(True)
         self._ax_ch2v3.set_xlim(self.firing_limits)
         self._ax_ch2v3.set_ylim(self.firing_limits)
-        self._ax_ch2v3.set_xticks([])
-        self._ax_ch2v3.set_yticks([])
+        self._ax_ch2v3.set_xticklabels([])
+        self._ax_ch2v3.set_yticklabels([])
 
         self._ax_ch2v4.cla()
         self._ax_ch2v4.grid(True)
         self._ax_ch2v4.set_xlim(self.firing_limits)
         self._ax_ch2v4.set_ylim(self.firing_limits)
-        self._ax_ch2v4.set_xticks([])
-        self._ax_ch2v4.set_yticks([])
+        self._ax_ch2v4.set_xticklabels([])
+        self._ax_ch2v4.set_yticklabels([])
  
         self._ax_ch3v4.cla()
         self._ax_ch3v4.grid(True)
         self._ax_ch3v4.set_xlim(self.firing_limits)
         self._ax_ch3v4.set_ylim(self.firing_limits)
-        self._ax_ch3v4.set_xticks([])
-        self._ax_ch3v4.set_yticks([])
+        self._ax_ch3v4.set_xticklabels([])
+        self._ax_ch3v4.set_yticklabels([])
 
     def setupWidgetLayout(self):
         parent_layout_box = QVBoxLayout()
@@ -250,7 +254,7 @@ class MLViewer(QMainWindow):
         if self.output_dir is None:
             self.output_dir = QtHelperUtils.get_directory(message="Choose firings data directory.")
         tetrode_dir = os.path.join(self.output_dir, 'nt' + tetrode_id)
-        if ACCESS_TIMESTAMPED_FIRINGS:
+        if self.access_timestamped_firingS:
             firings_file = 'firings-' + str(self.session_id) + '.curated.mda'
         else:
             firings_file = 'firings.curated.mda'
@@ -350,8 +354,13 @@ class MLViewer(QMainWindow):
         # is raw data from mountainsort, then you have the indices readily
         # available to you. Otherwise, need to search for clips in the raw data
         # file by timestamp.
-        if ACCESS_TIMESTAMPED_FIRINGS:
+        print("Selection")
+        # spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
+        if self.access_timestamped_firings:
             spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
+            print(self.timestamp_data)
+            print(spike_indices)
+            print("Timestamped")
         else:
             spike_indices = np.array(self.firing_data[1], dtype='int')
             # print(spike_indices)
@@ -375,25 +384,9 @@ class MLViewer(QMainWindow):
             peak_sample_loc    = np.unravel_index(peak_amplitude_idx, (N_ELECTRODE_CHANNELS, FIRING_CLIP_SIZE))
             self.firing_amplitudes[spk_idx,:] = -self.firing_clips[spk_idx,:,peak_sample_loc[1]]
 
-        """
-        for example_idx in range(100,200):
-            plt.subplot(221)
-            plt.plot(self.firing_clips[example_idx,0,:])
-
-            plt.subplot(222)
-            plt.plot(self.firing_clips[example_idx,1,:])
-
-            plt.subplot(223)
-            plt.plot(self.firing_clips[example_idx,2,:])
-
-            plt.subplot(224)
-            plt.plot(self.firing_clips[example_idx,3,:])
-            plt.show()
-        """
-
         print(self.firing_amplitudes.shape)
-        self.firing_limits = (-500, 3000)
-        # self.firing_limits = (np.min(self.firing_amplitudes), np.max(self.firing_amplitudes))
+        self.firing_limits = (max(-500,np.min(self.firing_amplitudes)), \
+                min(3000,np.max(self.firing_amplitudes)))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
         del raw_clip_data
 
@@ -415,6 +408,27 @@ class MLViewer(QMainWindow):
         self.unit_selection.clear()
         for cl in self.cluster_names:
             self.unit_selection.addItem(str(cl))
+
+    def showExampleWaveforms(self):
+        """
+        Show example waveforms from the current spike selection.
+        """
+
+        # TODO: Account for the spieks that are being shown at the moment.
+        # For now, we are just showing a random set of spikes to make sure that things look sane
+        for example_idx in range(100,200):
+            plt.subplot(221)
+            plt.plot(self.firing_clips[example_idx,0,:])
+
+            plt.subplot(222)
+            plt.plot(self.firing_clips[example_idx,1,:])
+
+            plt.subplot(223)
+            plt.plot(self.firing_clips[example_idx,2,:])
+
+            plt.subplot(224)
+            plt.plot(self.firing_clips[example_idx,3,:])
+            plt.show()
 
     def getCurrentClusterSelection(self):
         if self.clusters is None:
@@ -481,6 +495,10 @@ class MLViewer(QMainWindow):
         if not self.show_cluster_widget:
             self.showCluterWidget()
         self.statusBar().showMessage('Firing data loaded from ' + firings_filename)
+
+    def toggleTimestampedSikes(self, state):
+        self.access_tstamped_selection.setChecked(state)
+        self.access_timestamped_firings = state
 
     def loadClusterFile(self, _):
         """
@@ -628,6 +646,9 @@ class MLViewer(QMainWindow):
         multi_session_sort.triggered.connect(self.sortMultiSession)
         # =============== PLOT MENU =============== 
         plot_menu = menu_bar.addMenu('&Plot')
+        example_waveforms_menu = plot_menu.addAction('&Example Waveforms')
+        example_waveforms_menu.setStatusTip('Show example waveforms from the current spike selection.')
+        example_waveforms_menu.triggered.connect(self.showExampleWaveforms)
 
         # =============== PREF MENU =============== 
         preferences_menu = menu_bar.addMenu('Pre&ferences')
@@ -635,8 +656,13 @@ class MLViewer(QMainWindow):
         visible_unit_selection.setStatusTip('Select visible units')
         visible_unit_selection.triggered.connect(self.getCurrentClusterSelection)
 
-        directories_menu = preferences_menu.addMenu('&Directories')
+        self.access_tstamped_selection = QAction('&Timestamped Spike Data', self, checkable=True)
+        self.access_tstamped_selection.setStatusTip('Assume that spike MDAs have timestamps instead of time indices.')
+        self.access_tstamped_selection.setChecked(DEFAULT_ACCESS_TIMESTAMPED_SPIKES)
+        self.access_tstamped_selection.triggered.connect(self.toggleTimestampedSikes)
+        preferences_menu.addAction(self.access_tstamped_selection)
 
+        directories_menu = preferences_menu.addMenu('&Directories')
         output_dir_selection = directories_menu.addAction('&Output directory')
         output_dir_selection.triggered.connect(self.selectOutputDirectory)
 
