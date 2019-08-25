@@ -33,11 +33,13 @@ import MountainViewIO
 import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
-DEFAULT_ACCESS_TIMESTAMPED_SPIKES = False
+DEFAULT_ACCESS_TIMESTAMPED_SPIKES = True
 FIRING_CLIP_SIZE = 32
 FIRING_PRE_CLIP = 8
 FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
 N_ELECTRODE_CHANNELS = 4
+SPIKE_TRANSPARENCY = 0.5
+N_CLUSTER_COLORS = 13   # Picking a prime number to get uniform coverage
 WHITEN_CLIP_DATA = False
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
@@ -160,6 +162,7 @@ class MLViewer(QMainWindow):
             return
 
         self._ax_ch1v2.cla()
+        self._ax_ch1v2.set_facecolor('black')
         self._ax_ch1v2.grid(True)
         self._ax_ch1v2.set_xlim(self.firing_limits)
         self._ax_ch1v2.set_ylim(self.firing_limits)
@@ -167,6 +170,7 @@ class MLViewer(QMainWindow):
         self._ax_ch1v2.set_yticklabels([])
 
         self._ax_ch1v3.cla()
+        self._ax_ch1v3.set_facecolor('black')
         self._ax_ch1v3.grid(True)
         self._ax_ch1v3.set_xlim(self.firing_limits)
         self._ax_ch1v3.set_ylim(self.firing_limits)
@@ -174,6 +178,7 @@ class MLViewer(QMainWindow):
         self._ax_ch1v3.set_yticklabels([])
 
         self._ax_ch1v4.cla()
+        self._ax_ch1v4.set_facecolor('black')
         self._ax_ch1v4.grid(True)
         self._ax_ch1v4.set_xlim(self.firing_limits)
         self._ax_ch1v4.set_ylim(self.firing_limits)
@@ -181,6 +186,7 @@ class MLViewer(QMainWindow):
         self._ax_ch1v4.set_yticklabels([])
 
         self._ax_ch2v3.cla()
+        self._ax_ch2v3.set_facecolor('black')
         self._ax_ch2v3.grid(True)
         self._ax_ch2v3.set_xlim(self.firing_limits)
         self._ax_ch2v3.set_ylim(self.firing_limits)
@@ -188,6 +194,7 @@ class MLViewer(QMainWindow):
         self._ax_ch2v3.set_yticklabels([])
 
         self._ax_ch2v4.cla()
+        self._ax_ch2v4.set_facecolor('black')
         self._ax_ch2v4.grid(True)
         self._ax_ch2v4.set_xlim(self.firing_limits)
         self._ax_ch2v4.set_ylim(self.firing_limits)
@@ -195,6 +202,7 @@ class MLViewer(QMainWindow):
         self._ax_ch2v4.set_yticklabels([])
  
         self._ax_ch3v4.cla()
+        self._ax_ch3v4.set_facecolor('black')
         self._ax_ch3v4.grid(True)
         self._ax_ch3v4.set_xlim(self.firing_limits)
         self._ax_ch3v4.set_ylim(self.firing_limits)
@@ -237,21 +245,39 @@ class MLViewer(QMainWindow):
         """
         Redraw the axes with current firing data.
         """
-        if not self.show_cluster_widget:
+        if (not self.show_cluster_widget) or  (self.firing_amplitudes is None):
             return
 
         self.clearAxes()
+        taken_colors = list()
         for cl_id in self.currently_selected_clusters:
             spikes_in_cluster = self.clusters[cl_id]
+            cluster_color_identifier = int(cl_id) % N_CLUSTER_COLORS
+            cluster_color = colormap.hsv(float(cluster_color_identifier)/N_CLUSTER_COLORS)
+            if cluster_color_identifier in taken_colors:
+                print(MODULE_IDENTIFIER + "Warning: Color repeated while plotting spikes for cluster %s"%cl_id)
+            taken_colors.append(cluster_color_identifier)
             # print(spikes_in_cluster)
 
             # These are the 2D plots
-            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=1)
-            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=1)
-            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=1)
-            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=1)
-            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=1)
-            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=1)
+            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
+                    self.firing_amplitudes[spikes_in_cluster,1], s=1, alpha=SPIKE_TRANSPARENCY, \
+                    color=cluster_color)
+            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
+                    self.firing_amplitudes[spikes_in_cluster,2], s=1, alpha=SPIKE_TRANSPARENCY, \
+                    color=cluster_color)
+            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
+                    self.firing_amplitudes[spikes_in_cluster,3], s=1, alpha=SPIKE_TRANSPARENCY, \
+                    color=cluster_color)
+            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], \
+                    self.firing_amplitudes[spikes_in_cluster,2], s=1, alpha=SPIKE_TRANSPARENCY, \
+                    color=cluster_color)
+            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], \
+                    self.firing_amplitudes[spikes_in_cluster,3], s=1, alpha=SPIKE_TRANSPARENCY, \
+                    color=cluster_color)
+            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], \
+                    self.firing_amplitudes[spikes_in_cluster,3], s=1, alpha=SPIKE_TRANSPARENCY, \
+                    color=cluster_color)
         self.canvas.draw()
 
     def fetchTetrodeData(self, _):
