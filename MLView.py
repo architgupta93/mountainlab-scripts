@@ -34,11 +34,16 @@ import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
 DEFAULT_ACCESS_TIMESTAMPED_SPIKES = True
+DEFAULT_SHOW_GRID_ON_SPIKES = False
+FIGURE_BACKGROUND = 'black'
+FIGURE_DPI = 1200.0
 FIRING_CLIP_SIZE = 32
 FIRING_PRE_CLIP = 8
 FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
 N_ELECTRODE_CHANNELS = 4
-SPIKE_TRANSPARENCY = 0.5
+SPIKE_MARKER_WIDTH = 0.04
+SPIKE_MARKER_SIZE = 0.04
+SPIKE_TRANSPARENCY = 0.50
 N_CLUSTER_COLORS = 13   # Picking a prime number to get uniform coverage
 WHITEN_CLIP_DATA = False
 
@@ -67,6 +72,7 @@ class MLViewer(QMainWindow):
 
         # The menu item that controls our looking for timestamps in spike mda files.
         self.access_tstamped_selection = None
+        self.show_grid_selection = None
         self.setupMenus()
 
         # Tetrode info fields
@@ -90,8 +96,10 @@ class MLViewer(QMainWindow):
         else:
             self.raw_data_location = None
 
-        # Data entries
         self.access_timestamped_firings = DEFAULT_ACCESS_TIMESTAMPED_SPIKES
+        self.show_grid_on_spikes = DEFAULT_SHOW_GRID_ON_SPIKES
+
+        # Data entries
         self.firing_data = None
         self.firing_clips = None
         self.firing_amplitudes = None
@@ -107,7 +115,7 @@ class MLViewer(QMainWindow):
 
         # Graphical entities
         self.widget  = QDialog()
-        self.figure  = Figure(figsize=(12,12))
+        self.figure  = Figure(figsize=(1024/FIGURE_DPI,1024/FIGURE_DPI), dpi=FIGURE_DPI)
         self.canvas  = FigureCanvas(self.figure)
         plot_grid    = gridspec.GridSpec(2, 3)
         self.toolbar = NavigationToolbar(self.canvas, self.widget)
@@ -162,52 +170,70 @@ class MLViewer(QMainWindow):
             return
 
         self._ax_ch1v2.cla()
-        self._ax_ch1v2.set_facecolor('black')
-        self._ax_ch1v2.grid(True)
+        self._ax_ch1v2.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch1v2.grid(self.show_grid_on_spikes)
         self._ax_ch1v2.set_xlim(self.firing_limits)
         self._ax_ch1v2.set_ylim(self.firing_limits)
         self._ax_ch1v2.set_xticklabels([])
         self._ax_ch1v2.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch1v2.set_xticks([])
+            self._ax_ch1v2.set_yticks([])
 
         self._ax_ch1v3.cla()
-        self._ax_ch1v3.set_facecolor('black')
-        self._ax_ch1v3.grid(True)
+        self._ax_ch1v3.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch1v3.grid(self.show_grid_on_spikes)
         self._ax_ch1v3.set_xlim(self.firing_limits)
         self._ax_ch1v3.set_ylim(self.firing_limits)
         self._ax_ch1v3.set_xticklabels([])
         self._ax_ch1v3.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch1v3.set_xticks([])
+            self._ax_ch1v3.set_yticks([])
 
         self._ax_ch1v4.cla()
-        self._ax_ch1v4.set_facecolor('black')
-        self._ax_ch1v4.grid(True)
+        self._ax_ch1v4.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch1v4.grid(self.show_grid_on_spikes)
         self._ax_ch1v4.set_xlim(self.firing_limits)
         self._ax_ch1v4.set_ylim(self.firing_limits)
         self._ax_ch1v4.set_xticklabels([])
         self._ax_ch1v4.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch1v4.set_xticks([])
+            self._ax_ch1v4.set_yticks([])
 
         self._ax_ch2v3.cla()
-        self._ax_ch2v3.set_facecolor('black')
-        self._ax_ch2v3.grid(True)
+        self._ax_ch2v3.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch2v3.grid(self.show_grid_on_spikes)
         self._ax_ch2v3.set_xlim(self.firing_limits)
         self._ax_ch2v3.set_ylim(self.firing_limits)
         self._ax_ch2v3.set_xticklabels([])
         self._ax_ch2v3.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch2v3.set_xticks([])
+            self._ax_ch2v3.set_yticks([])
 
         self._ax_ch2v4.cla()
-        self._ax_ch2v4.set_facecolor('black')
-        self._ax_ch2v4.grid(True)
+        self._ax_ch2v4.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch2v4.grid(self.show_grid_on_spikes)
         self._ax_ch2v4.set_xlim(self.firing_limits)
         self._ax_ch2v4.set_ylim(self.firing_limits)
         self._ax_ch2v4.set_xticklabels([])
         self._ax_ch2v4.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch2v4.set_xticks([])
+            self._ax_ch2v4.set_yticks([])
  
         self._ax_ch3v4.cla()
-        self._ax_ch3v4.set_facecolor('black')
-        self._ax_ch3v4.grid(True)
+        self._ax_ch3v4.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch3v4.grid(self.show_grid_on_spikes)
         self._ax_ch3v4.set_xlim(self.firing_limits)
         self._ax_ch3v4.set_ylim(self.firing_limits)
         self._ax_ch3v4.set_xticklabels([])
         self._ax_ch3v4.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch3v4.set_xticks([])
+            self._ax_ch3v4.set_yticks([])
 
     def setupWidgetLayout(self):
         parent_layout_box = QVBoxLayout()
@@ -245,15 +271,19 @@ class MLViewer(QMainWindow):
         """
         Redraw the axes with current firing data.
         """
+        self.clearAxes()
         if (not self.show_cluster_widget) or  (self.firing_amplitudes is None):
             return
 
-        self.clearAxes()
         taken_colors = list()
         for cl_id in self.currently_selected_clusters:
             spikes_in_cluster = self.clusters[cl_id]
             cluster_color_identifier = int(cl_id) % N_CLUSTER_COLORS
             cluster_color = colormap.hsv(float(cluster_color_identifier)/N_CLUSTER_COLORS)
+
+            # Normalize the cluster color to increase its brightness for the dark background
+            # cluster_color = [c_val * 0.25 for c_val in cluster_color]
+
             if cluster_color_identifier in taken_colors:
                 print(MODULE_IDENTIFIER + "Warning: Color repeated while plotting spikes for cluster %s"%cl_id)
             taken_colors.append(cluster_color_identifier)
@@ -261,23 +291,29 @@ class MLViewer(QMainWindow):
 
             # These are the 2D plots
             self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
-                    self.firing_amplitudes[spikes_in_cluster,1], s=1, alpha=SPIKE_TRANSPARENCY, \
-                    color=cluster_color)
+                    self.firing_amplitudes[spikes_in_cluster,1], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
             self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
-                    self.firing_amplitudes[spikes_in_cluster,2], s=1, alpha=SPIKE_TRANSPARENCY, \
-                    color=cluster_color)
+                    self.firing_amplitudes[spikes_in_cluster,2], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
             self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
-                    self.firing_amplitudes[spikes_in_cluster,3], s=1, alpha=SPIKE_TRANSPARENCY, \
-                    color=cluster_color)
+                    self.firing_amplitudes[spikes_in_cluster,3], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
             self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], \
-                    self.firing_amplitudes[spikes_in_cluster,2], s=1, alpha=SPIKE_TRANSPARENCY, \
-                    color=cluster_color)
+                    self.firing_amplitudes[spikes_in_cluster,2], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
             self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], \
-                    self.firing_amplitudes[spikes_in_cluster,3], s=1, alpha=SPIKE_TRANSPARENCY, \
-                    color=cluster_color)
+                    self.firing_amplitudes[spikes_in_cluster,3], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
             self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], \
-                    self.firing_amplitudes[spikes_in_cluster,3], s=1, alpha=SPIKE_TRANSPARENCY, \
-                    color=cluster_color)
+                    self.firing_amplitudes[spikes_in_cluster,3], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
         self.canvas.draw()
 
     def fetchTetrodeData(self, _):
@@ -421,7 +457,7 @@ class MLViewer(QMainWindow):
 
         print(self.firing_amplitudes.shape)
         self.firing_limits = (max(-500,np.min(self.firing_amplitudes)), \
-                min(3000,np.max(self.firing_amplitudes)))
+                min(3000, np.mean(self.firing_amplitudes) + 5.0 * np.std(self.firing_amplitudes)))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
         del raw_clip_data
 
@@ -516,6 +552,9 @@ class MLViewer(QMainWindow):
             for accepted_idx in user_choices[1]:
                 self.currently_selected_clusters.append(self.cluster_names[accepted_idx])
 
+            # Sort the cluster identities so that the plot order is consistent.
+            self.currently_selected_clusters.sort()
+
     def loadFirings(self, _, firings_filename=None):
         """
         Load raw or clustered firings from file.
@@ -552,10 +591,16 @@ class MLViewer(QMainWindow):
         if not self.show_cluster_widget:
             self.showCluterWidget()
         self.statusBar().showMessage('Firing data loaded from ' + firings_filename)
+        print(MODULE_IDENTIFIER + "Firing data loaded from %s"%firings_filename)
 
     def toggleTimestampedSikes(self, state):
         self.access_tstamped_selection.setChecked(state)
         self.access_timestamped_firings = state
+
+    def toggleShowGrids(self, state):
+        self.show_grid_selection.setChecked(state)
+        self.show_grid_on_spikes = state
+        self.refresh(False)
 
     def loadClusterFile(self, _):
         """
@@ -739,7 +784,14 @@ class MLViewer(QMainWindow):
         self.access_tstamped_selection.setStatusTip('Assume that spike MDAs have timestamps instead of time indices.')
         self.access_tstamped_selection.setChecked(DEFAULT_ACCESS_TIMESTAMPED_SPIKES)
         self.access_tstamped_selection.triggered.connect(self.toggleTimestampedSikes)
+
+        self.show_grid_selection = QAction('Show &grid', self, checkable=True)
+        self.show_grid_selection.setStatusTip('Show grid on the spike amplitude plots')
+        self.show_grid_selection.setChecked(DEFAULT_SHOW_GRID_ON_SPIKES)
+        self.show_grid_selection.triggered.connect(self.toggleShowGrids)
+
         preferences_menu.addAction(self.access_tstamped_selection)
+        preferences_menu.addAction(self.show_grid_selection)
 
         directories_menu = preferences_menu.addMenu('&Directories')
         output_dir_selection = directories_menu.addAction('&Output directory')
