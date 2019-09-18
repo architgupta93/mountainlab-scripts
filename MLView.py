@@ -33,6 +33,7 @@ import MountainViewIO
 import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
+N_SPIKES_TO_PLOT = 3000
 DEFAULT_ACCESS_TIMESTAMPED_SPIKES = True
 DEFAULT_SHOW_GRID_ON_SPIKES = False
 FIGURE_BACKGROUND = 'black'
@@ -43,7 +44,7 @@ FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
 N_ELECTRODE_CHANNELS = 4
 SPIKE_MARKER_WIDTH = 0.04
 SPIKE_MARKER_SIZE = 0.04
-SPIKE_TRANSPARENCY = 0.50
+SPIKE_TRANSPARENCY = 0.85
 N_CLUSTER_COLORS = 13   # Picking a prime number to get uniform coverage
 WHITEN_CLIP_DATA = False
 
@@ -278,6 +279,11 @@ class MLViewer(QMainWindow):
         taken_colors = list()
         for cl_id in self.currently_selected_clusters:
             spikes_in_cluster = self.clusters[cl_id]
+            if len(spikes_in_cluster) > N_SPIKES_TO_PLOT:
+                # Showing the last few spikes.
+                # TODO: This should be redone to show a random set of spikes
+                spikes_in_cluster = spikes_in_cluster[-N_SPIKES_TO_PLOT:]
+
             cluster_color_identifier = int(cl_id) % N_CLUSTER_COLORS
             cluster_color = colormap.hsv(float(cluster_color_identifier)/N_CLUSTER_COLORS)
 
@@ -456,8 +462,9 @@ class MLViewer(QMainWindow):
             self.firing_amplitudes[spk_idx,:] = -self.firing_clips[spk_idx,:,peak_sample_loc[1]]
 
         print(self.firing_amplitudes.shape)
-        self.firing_limits = (max(-500,np.min(self.firing_amplitudes)), \
-                min(3000, np.mean(self.firing_amplitudes) + 5.0 * np.std(self.firing_amplitudes)))
+        # self.firing_limits = (max(-500,np.min(self.firing_amplitudes)), \
+        #         min(3000, np.mean(self.firing_amplitudes) + 5.0 * np.std(self.firing_amplitudes)))
+        self.firing_limits = [-100, 2000]
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
         del raw_clip_data
 

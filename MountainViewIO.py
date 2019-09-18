@@ -196,7 +196,7 @@ def loadRawData(data_filename=None, data_dir=None):
 
     return raw_data['arr_0'], raw_data['arr_1'], raw_data['arr_2'], raw_data['arr_3']
 
-def separateSpikesInEpochs(data_dir=None, firings_file='firings.curated-calibration.mda', timestamp_files=None, write_separated_spikes=True):
+def separateSpikesInEpochs(data_dir=None, firings_file='firings.curated.mda', timestamp_files=None, write_separated_spikes=True):
     """
     Takes curated spikes from MountainSort and combines this information with spike timestamps to create separate curated spikes for each epoch
 
@@ -304,7 +304,7 @@ def separateSpikesInEpochs(data_dir=None, firings_file='firings.curated-calibrat
             for tt_idx, tet in enumerate(separated_tetrodes):
                 for ep_idx in range(len(timestamp_files)):
                     if curated_firings[tt_idx][ep_idx] is not None:
-                        ep_firings_file_name = data_dir + '/' + tet + '/firings-calibrated' + \
+                        ep_firings_file_name = data_dir + '/' + tet + '/firings-' + \
                                 str(ep_idx+1) + '.curated.mda'
                         mdaio.writemda64(curated_firings[tt_idx][ep_idx], ep_firings_file_name)
         except OSError as exception:
