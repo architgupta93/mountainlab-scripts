@@ -139,6 +139,9 @@ class MLViewer(QMainWindow):
         # Selecting individual tetrodes
         self.tetrode_selection = QComboBox()
         self.tetrode_selection.activated.connect(self.fetchTetrodeData)
+        self.tetrode_begin = 1
+        self.tetrode_end = 64
+
         # Add next and prev buttons to look at individual cells.
         self.next_tet_button = QPushButton('Next')
         self.next_tet_button.clicked.connect(self.NextTetrode)
@@ -649,7 +652,7 @@ class MLViewer(QMainWindow):
             QtHelperUtils.display_warning('Inappropriate MDA specified for sorting!')
             return
 
-        tetrode_range = range(1,65)
+        tetrode_range = range(43,60)
         do_mask_artifacts = True
         clear_files = True
         MS4batch.run_pipeline([epoch_mda_file], self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
