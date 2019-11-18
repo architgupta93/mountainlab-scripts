@@ -677,7 +677,7 @@ class MLViewer(QMainWindow):
 
         # TODO: Create an input dialog that gets all these properties from the
         # user (dialog can also show all the directories that have been selected.)
-        tetrode_range = range(1,40)
+        tetrode_range = range(13,64)
         do_mask_artifacts = True
         clear_files = True
         MS4batch.run_pipeline(mda_list, self.output_dir, tetrode_range, do_mask_artifacts, clear_files)

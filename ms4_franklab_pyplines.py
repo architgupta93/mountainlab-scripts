@@ -224,10 +224,10 @@ def add_curation_tags(*, dataset_dir, output_dir, hand_curation=False, opts={}):
     p2p.tagged_curation(
         cluster_metrics=raw_metrics_file,
         metrics_tagged=tagged_metrics_file,
-        firing_rate_thresh=.01, 
+        firing_rate_thresh=0, # was .01, ABL changed 8/22/19 
         isolation_thresh=.95, 
-        noise_overlap_thresh=.03, 
-        peak_snr_thresh=1.5, 
+        noise_overlap_thresh=.02, # was .03, ABL changed 8/22/19
+        peak_snr_thresh=2.5, # was 1.5, ABL changed 8/22/19 
         mv2file=curated_mv2_file,
         opts=opts
     ) 
