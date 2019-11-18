@@ -15,6 +15,7 @@ from scipy.signal import butter, lfilter
 from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QApplication, QDialog, QFileDialog, QMessageBox
 from PyQt5.QtWidgets import QPushButton, QSlider, QRadioButton, QLabel, QInputDialog
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout, QComboBox
+from PyQt5.QtCore import Qt
 
 # Matplotlib in Qt5
 from mpl_toolkits.mplot3d import Axes3D
@@ -32,11 +33,18 @@ import MountainViewIO
 import QtHelperUtils
 
 MODULE_IDENTIFIER = "[MLView] "
-DEFAULT_ACCESS_TIMESTAMPED_SPIKES = False
+DEFAULT_ACCESS_TIMESTAMPED_SPIKES = True
+DEFAULT_SHOW_GRID_ON_SPIKES = False
+FIGURE_BACKGROUND = 'black'
+FIGURE_DPI = 1200.0
 FIRING_CLIP_SIZE = 32
 FIRING_PRE_CLIP = 8
 FIRING_POST_CLIP = FIRING_CLIP_SIZE - FIRING_PRE_CLIP
 N_ELECTRODE_CHANNELS = 4
+SPIKE_MARKER_WIDTH = 0.04
+SPIKE_MARKER_SIZE = 0.04
+SPIKE_TRANSPARENCY = 0.50
+N_CLUSTER_COLORS = 13   # Picking a prime number to get uniform coverage
 WHITEN_CLIP_DATA = False
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
@@ -64,6 +72,7 @@ class MLViewer(QMainWindow):
 
         # The menu item that controls our looking for timestamps in spike mda files.
         self.access_tstamped_selection = None
+        self.show_grid_selection = None
         self.setupMenus()
 
         # Tetrode info fields
@@ -87,8 +96,10 @@ class MLViewer(QMainWindow):
         else:
             self.raw_data_location = None
 
-        # Data entries
         self.access_timestamped_firings = DEFAULT_ACCESS_TIMESTAMPED_SPIKES
+        self.show_grid_on_spikes = DEFAULT_SHOW_GRID_ON_SPIKES
+
+        # Data entries
         self.firing_data = None
         self.firing_clips = None
         self.firing_amplitudes = None
@@ -104,7 +115,7 @@ class MLViewer(QMainWindow):
 
         # Graphical entities
         self.widget  = QDialog()
-        self.figure  = Figure(figsize=(12,12))
+        self.figure  = Figure(figsize=(1024/FIGURE_DPI,1024/FIGURE_DPI), dpi=FIGURE_DPI)
         self.canvas  = FigureCanvas(self.figure)
         plot_grid    = gridspec.GridSpec(2, 3)
         self.toolbar = NavigationToolbar(self.canvas, self.widget)
@@ -140,6 +151,13 @@ class MLViewer(QMainWindow):
         if self.data_dir is not None:
             self.populateTetrodeMenu()
 
+    def keyPressEvent(self, e):
+        # The following keys are forwarded by the completer to the widget.
+        if e.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab):
+            e.ignore()
+            # Let the completer do default behavior.
+            return
+
     def showCluterWidget(self):
         self.show_cluster_widget = True
         self.setupWidgetLayout()
@@ -152,46 +170,70 @@ class MLViewer(QMainWindow):
             return
 
         self._ax_ch1v2.cla()
-        self._ax_ch1v2.grid(True)
+        self._ax_ch1v2.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch1v2.grid(self.show_grid_on_spikes)
         self._ax_ch1v2.set_xlim(self.firing_limits)
         self._ax_ch1v2.set_ylim(self.firing_limits)
         self._ax_ch1v2.set_xticklabels([])
         self._ax_ch1v2.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch1v2.set_xticks([])
+            self._ax_ch1v2.set_yticks([])
 
         self._ax_ch1v3.cla()
-        self._ax_ch1v3.grid(True)
+        self._ax_ch1v3.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch1v3.grid(self.show_grid_on_spikes)
         self._ax_ch1v3.set_xlim(self.firing_limits)
         self._ax_ch1v3.set_ylim(self.firing_limits)
         self._ax_ch1v3.set_xticklabels([])
         self._ax_ch1v3.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch1v3.set_xticks([])
+            self._ax_ch1v3.set_yticks([])
 
         self._ax_ch1v4.cla()
-        self._ax_ch1v4.grid(True)
+        self._ax_ch1v4.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch1v4.grid(self.show_grid_on_spikes)
         self._ax_ch1v4.set_xlim(self.firing_limits)
         self._ax_ch1v4.set_ylim(self.firing_limits)
         self._ax_ch1v4.set_xticklabels([])
         self._ax_ch1v4.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch1v4.set_xticks([])
+            self._ax_ch1v4.set_yticks([])
 
         self._ax_ch2v3.cla()
-        self._ax_ch2v3.grid(True)
+        self._ax_ch2v3.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch2v3.grid(self.show_grid_on_spikes)
         self._ax_ch2v3.set_xlim(self.firing_limits)
         self._ax_ch2v3.set_ylim(self.firing_limits)
         self._ax_ch2v3.set_xticklabels([])
         self._ax_ch2v3.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch2v3.set_xticks([])
+            self._ax_ch2v3.set_yticks([])
 
         self._ax_ch2v4.cla()
-        self._ax_ch2v4.grid(True)
+        self._ax_ch2v4.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch2v4.grid(self.show_grid_on_spikes)
         self._ax_ch2v4.set_xlim(self.firing_limits)
         self._ax_ch2v4.set_ylim(self.firing_limits)
         self._ax_ch2v4.set_xticklabels([])
         self._ax_ch2v4.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch2v4.set_xticks([])
+            self._ax_ch2v4.set_yticks([])
  
         self._ax_ch3v4.cla()
-        self._ax_ch3v4.grid(True)
+        self._ax_ch3v4.set_facecolor(FIGURE_BACKGROUND)
+        self._ax_ch3v4.grid(self.show_grid_on_spikes)
         self._ax_ch3v4.set_xlim(self.firing_limits)
         self._ax_ch3v4.set_ylim(self.firing_limits)
         self._ax_ch3v4.set_xticklabels([])
         self._ax_ch3v4.set_yticklabels([])
+        if not self.show_grid_on_spikes:
+            self._ax_ch3v4.set_xticks([])
+            self._ax_ch3v4.set_yticks([])
 
     def setupWidgetLayout(self):
         parent_layout_box = QVBoxLayout()
@@ -229,21 +271,49 @@ class MLViewer(QMainWindow):
         """
         Redraw the axes with current firing data.
         """
-        if not self.show_cluster_widget:
+        self.clearAxes()
+        if (not self.show_cluster_widget) or  (self.firing_amplitudes is None):
             return
 
-        self.clearAxes()
+        taken_colors = list()
         for cl_id in self.currently_selected_clusters:
             spikes_in_cluster = self.clusters[cl_id]
+            cluster_color_identifier = int(cl_id) % N_CLUSTER_COLORS
+            cluster_color = colormap.hsv(float(cluster_color_identifier)/N_CLUSTER_COLORS)
+
+            # Normalize the cluster color to increase its brightness for the dark background
+            # cluster_color = [c_val * 0.25 for c_val in cluster_color]
+
+            if cluster_color_identifier in taken_colors:
+                print(MODULE_IDENTIFIER + "Warning: Color repeated while plotting spikes for cluster %s"%cl_id)
+            taken_colors.append(cluster_color_identifier)
             # print(spikes_in_cluster)
 
             # These are the 2D plots
-            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,1], s=1)
-            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,2], s=1)
-            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], self.firing_amplitudes[spikes_in_cluster,3], s=1)
-            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,2], s=1)
-            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], self.firing_amplitudes[spikes_in_cluster,3], s=1)
-            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], self.firing_amplitudes[spikes_in_cluster,3], s=1)
+            self._ax_ch1v2.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
+                    self.firing_amplitudes[spikes_in_cluster,1], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
+            self._ax_ch1v3.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
+                    self.firing_amplitudes[spikes_in_cluster,2], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
+            self._ax_ch1v4.scatter(self.firing_amplitudes[spikes_in_cluster,0], \
+                    self.firing_amplitudes[spikes_in_cluster,3], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
+            self._ax_ch2v3.scatter(self.firing_amplitudes[spikes_in_cluster,1], \
+                    self.firing_amplitudes[spikes_in_cluster,2], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
+            self._ax_ch2v4.scatter(self.firing_amplitudes[spikes_in_cluster,1], \
+                    self.firing_amplitudes[spikes_in_cluster,3], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
+            self._ax_ch3v4.scatter(self.firing_amplitudes[spikes_in_cluster,2], \
+                    self.firing_amplitudes[spikes_in_cluster,3], s=SPIKE_MARKER_SIZE, \
+                    alpha=SPIKE_TRANSPARENCY, color=cluster_color, marker='.', \
+                    lw=SPIKE_MARKER_WIDTH)
         self.canvas.draw()
 
     def fetchTetrodeData(self, _):
@@ -354,15 +424,16 @@ class MLViewer(QMainWindow):
         # is raw data from mountainsort, then you have the indices readily
         # available to you. Otherwise, need to search for clips in the raw data
         # file by timestamp.
-        print("Selection")
+
         # spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
         if self.access_timestamped_firings:
             spike_indices = np.searchsorted(self.timestamp_data, self.firing_data[1])
             print(self.timestamp_data)
             print(spike_indices)
-            print("Timestamped")
+            print(MODULE_IDENTIFIER + "Timestamped clips extracted")
         else:
             spike_indices = np.array(self.firing_data[1], dtype='int')
+            print(MODULE_IDENTIFIER + "Indexed clips extracted")
             # print(spike_indices)
 
 
@@ -386,7 +457,7 @@ class MLViewer(QMainWindow):
 
         print(self.firing_amplitudes.shape)
         self.firing_limits = (max(-500,np.min(self.firing_amplitudes)), \
-                min(3000,np.max(self.firing_amplitudes)))
+                min(3000, np.mean(self.firing_amplitudes) + 5.0 * np.std(self.firing_amplitudes)))
         self.statusBar().showMessage(str(n_spikes) + ' firing clips loaded from ' + clips_file)
         del raw_clip_data
 
@@ -409,10 +480,32 @@ class MLViewer(QMainWindow):
         for cl in self.cluster_names:
             self.unit_selection.addItem(str(cl))
 
+    def saveScreenshot(self):
+        """
+        Save the current screen content as an image
+        """
+        # Create a filename
+        # The custom name feature is already present in the navigation toolbar. This function can be used to save data programatically
+        # save_file_name = QtHelperUtils.get_save_file_name(data_dir=self.output_dir, file_format='Image File (*.jpg)', message="Choose a screenshot name")
+        save_file_name = time.strftime("T" + str(self.tetrode_selection.currentText()) + "U" + str(self.unit_selection.currentText()) + "_%Y%m%d_%H%M%S.png") 
+        save_success = False
+        try:
+            self.figure.savefig(save_file_name)
+            save_success = True
+        except Exception as err:
+            print(MODULE_IDENTIFIER + "Unable to save current display.")
+            print(err)
+
+        if save_success:
+            self.statusBar().showMessage("Screenshot saved to %s"%save_file_name)
+
     def showExampleWaveforms(self):
         """
         Show example waveforms from the current spike selection.
         """
+        if self.firing_clips is None:
+            QtHelperUtils.display_warning("Clip data not loaded to extract example waveforms from.")
+            return
 
         # TODO: Account for the spieks that are being shown at the moment.
         # For now, we are just showing a random set of spikes to make sure that things look sane
@@ -454,10 +547,13 @@ class MLViewer(QMainWindow):
             else:
                 self.currently_selected_clusters = list()
 
-            print(user_choices[1])
+            print(MODULE_IDENTIFIER + "Selected clusters are...")
             print(self.cluster_names)
             for accepted_idx in user_choices[1]:
                 self.currently_selected_clusters.append(self.cluster_names[accepted_idx])
+
+            # Sort the cluster identities so that the plot order is consistent.
+            self.currently_selected_clusters.sort()
 
     def loadFirings(self, _, firings_filename=None):
         """
@@ -495,10 +591,16 @@ class MLViewer(QMainWindow):
         if not self.show_cluster_widget:
             self.showCluterWidget()
         self.statusBar().showMessage('Firing data loaded from ' + firings_filename)
+        print(MODULE_IDENTIFIER + "Firing data loaded from %s"%firings_filename)
 
     def toggleTimestampedSikes(self, state):
         self.access_tstamped_selection.setChecked(state)
         self.access_timestamped_firings = state
+
+    def toggleShowGrids(self, state):
+        self.show_grid_selection.setChecked(state)
+        self.show_grid_on_spikes = state
+        self.refresh(False)
 
     def loadClusterFile(self, _):
         """
@@ -576,6 +678,20 @@ class MLViewer(QMainWindow):
         """
         QtHelperUtils.display_warning('Function not implemented!')
 
+    def clearData(self):
+        self.firing_data = None
+        self.firing_clips = None
+        self.firing_amplitudes = None
+        self.currently_selected_clusters = None
+        self.clusters = None
+        self.cluster_names = None
+        self.cluster_colors = None
+        self.current_tetrode = 0
+        self.firing_limits = (-500, 3000)
+        self.session_id = 1
+        self.timestamp_file = None
+        self.timestamp_data = None
+
     def selectOutputDirectory(self):
         """
         Select a new output directory.
@@ -609,8 +725,16 @@ class MLViewer(QMainWindow):
         qt_mview_action.setShortcut('Ctrl+M')
         qt_mview_action.triggered.connect(self.launchMountainView)
 
+        # Clear all the data stored presently
+        clear_action = file_menu.addAction('&Clear')
+        clear_action.setStatusTip('Clear/Reset all the data saved in the application')
+        clear_action.triggered.connect(self.clearData)
+
         # =============== SAVE MENU =============== 
         save_menu = file_menu.addMenu('&Save')
+        save_screenshot_menu = save_menu.addAction('&Screenshot')
+        save_screenshot_menu.setStatusTip('Save current view to computer')
+        save_screenshot_menu.triggered.connect(self.saveScreenshot)
 
         # =============== LOAD MENU =============== 
         open_menu = file_menu.addMenu('&Load')
@@ -660,7 +784,14 @@ class MLViewer(QMainWindow):
         self.access_tstamped_selection.setStatusTip('Assume that spike MDAs have timestamps instead of time indices.')
         self.access_tstamped_selection.setChecked(DEFAULT_ACCESS_TIMESTAMPED_SPIKES)
         self.access_tstamped_selection.triggered.connect(self.toggleTimestampedSikes)
+
+        self.show_grid_selection = QAction('Show &grid', self, checkable=True)
+        self.show_grid_selection.setStatusTip('Show grid on the spike amplitude plots')
+        self.show_grid_selection.setChecked(DEFAULT_SHOW_GRID_ON_SPIKES)
+        self.show_grid_selection.triggered.connect(self.toggleShowGrids)
+
         preferences_menu.addAction(self.access_tstamped_selection)
+        preferences_menu.addAction(self.show_grid_selection)
 
         directories_menu = preferences_menu.addMenu('&Directories')
         output_dir_selection = directories_menu.addAction('&Output directory')
