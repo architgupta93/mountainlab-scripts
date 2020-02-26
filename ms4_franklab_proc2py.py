@@ -159,24 +159,22 @@ def automated_curation(*,firings,cluster_metrics,firings_out,opts={}):
         opts
     )
 
-def tagged_curation(*,cluster_metrics,metrics_tagged,firing_rate_thresh=.01, isolation_thresh=.95, noise_overlap_thresh=.03, peak_snr_thresh=1.5, mv2file=[], opts={}):
+def tagged_curation(*,cluster_metrics,metrics_tagged,firing_rate_thresh=.01, isolation_thresh=.95, noise_overlap_thresh=.03, peak_snr_thresh=1.5, mv2file='', opts={}):
     # tagged curation
     return mlp.runProcess(
         'pyms.add_curation_tags',
         {
-            'metrics':cluster_metrics
         },
         {
-            'metrics_tagged':metrics_tagged
         },
         {
+            'metrics':cluster_metrics,
+            'metrics_tagged':metrics_tagged,
             'firing_rate_thresh':firing_rate_thresh,
             'isolation_thresh':isolation_thresh, 
             'noise_overlap_thresh':noise_overlap_thresh, 
-            'peak_snr_thresh':peak_snr_thresh, 
-            'mv2file':mv2file,
-        },
-        opts
+            'peak_snr_thresh':peak_snr_thresh
+        }
     )
 
 def get_epoch_offsets(*,dataset_dir, opts={}):

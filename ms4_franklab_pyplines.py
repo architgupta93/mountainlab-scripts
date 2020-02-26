@@ -219,7 +219,7 @@ def add_curation_tags(*, dataset_dir, output_dir, hand_curation=False, opts={}):
     else:
         raw_metrics_file = dataset_dir+'/metrics_raw.json'
         tagged_metrics_file = output_dir+'/metrics_tagged.json'
-        curated_mv2_file = []
+        curated_mv2_file = ''
 
     p2p.tagged_curation(
         cluster_metrics=raw_metrics_file,
@@ -253,7 +253,7 @@ def extract_marks(*,dataset_dir, output_dir, opts={}):
 def generate_templates(*,dataset_dir,output_dir,metrics_file=None,opts={}):
     try:
         # Read the MDA file for the filtered+whitened data
-        with open(dataset_dir+'/pre.mda.prv', 'r') as f:
+        with open(dataset_dir+'/filt.mda.prv', 'r') as f:
             prv_file = json.load(f)
         timeseries_mda = prv_file['original_path']
     except (FileNotFoundError, IOError) as err:
@@ -286,6 +286,10 @@ def cleanup_metrics(*, metrics_file, metrics_out, peak_amplitude_cutoff=5.0, snr
     for cluster in metrics['clusters']:
         if (cluster['metrics']['peak_amp'] is None) or (cluster['metrics']['peak_snr'] is None):
             continue
+
+        # Check if "tags" is a field in the data, otherwise add the field.
+        if 'tags' not in cluster:
+            cluster['tags'] = list()
 
         if (cluster['metrics']['peak_amp'] < peak_amplitude_cutoff) and (cluster['metrics']['peak_snr'] < snr_cutoff):
             cluster['tags'].clear()

@@ -156,25 +156,43 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         else:
             # run the actual sort
             if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
-                if n_epochs_to_sort > 1:
-                    pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
-                else:
-                    pyp.ms4_sort_full(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+                try:
+                    if n_epochs_to_sort > 1:
+                        pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+                    else:
+                        pyp.ms4_sort_full(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+                except Exception as err:
+                    print(err)
+                    print('ERROR: Unable to sort T%d.'%nt)
+
+                    if move_filt_mask_whiten_files:
+                        mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
+                        mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+                    continue
             else:
                 print(MODULE_IDENTIFIER + "Firings and raw cluster metrics file with concatenated epochs found. Using file!")
 
+        """
         if not os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE):
             pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
         else:
             print(MODULE_IDENTIFIER + "Tagged cluster metrics file with concatenated epochs found. Using file!")
+        """
 
+        # 2020-02-21: There seems to be some issue with this step at the
+        # moment. Since we are going to do this in as automated a way as
+        # possible, might as well just go from raw metrics to cleaned metrics,
+        # skipping the metrics tagging step in between.
+        """
         if not os.path.isfile(nt_out_dir + pyp.CLIPS_FILE):
             pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
         else:
             print(MODULE_IDENTIFIER + "Clips file with concatenated epochs found. Using file!")
 
         pyp.cleanup_metrics(metrics_file=nt_out_dir+'/metrics_tagged.json', metrics_out=nt_out_dir+'/metrics_cleaned.json')
-        # Generate templates for MountainView
+        """
+        pyp.cleanup_metrics(metrics_file=nt_out_dir+'/metrics_raw.json', metrics_out=nt_out_dir+'/metrics_cleaned.json')
+        # Generate templates for MountainView - Use the filt file for generating templates.
         if not (os.path.isfile(nt_out_dir + pyp.TEMPLATES_FILE) and\
                 os.path.isfile(nt_out_dir + pyp.TEMPLATE_STDS_FILE)):
             pyp.generate_templates(dataset_dir=nt_out_dir, output_dir=nt_out_dir, metrics_file=nt_out_dir+'/metrics_cleaned.json', opts={})
