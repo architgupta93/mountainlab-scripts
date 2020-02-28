@@ -51,6 +51,7 @@ def setup_NT_links(working_dir):
         raise FileNotFoundError('Unable to find data directory!')
 
     mda_util.make_sure_path_exists(mnt_data_dir)
+    prv_creation_proc = list()
     for tet_dir in os.listdir(raw_data_dir):
         destlink = mnt_data_dir + '/' + tet_dir
         srclink  = raw_data_dir + '/' + tet_dir
@@ -60,7 +61,23 @@ def setup_NT_links(working_dir):
             mda_file_path = srclink + '/' + mda_file
             mda_file_name = mda_file.strip('.mda')
             output_file_path = destlink + '/' + mda_file_name + '.raw.mda.prv'
-            subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
+
+            # UPDATE 2020-02-28: Was using a blocking subprocess.call to run
+            # prv-creation. Switching to Popen which is non-blocking.
+            # subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
+
+            p = subprocess.Popen([ML_PRV_CREATOR, mda_file_path, output_file_path])
+            prv_creation_proc.append(p)
+
+    # Make sure that all the processes have exitted before returning control to
+    # parent function which will start processing PRV files.
+    prv_creation_running = True
+    while prv_creation_running:
+        prv_creation_running = False
+        for open_proc in prv_creation_proc:
+            if open_proc.poll() is None:
+                prv_creation_running = True
+                time.sleep(1)
 
 def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True, clear_files=False):
     # Get the path for this file -> And then the directory in which this file
@@ -125,7 +142,13 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
             print('Concatenating Epochs: ' + ', '.join(prv_list))
 
             if not os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE):
-                pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
+                if len(prv_list) > 1:
+                    pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
+                else:
+                    # UPDATE 2020-02-28: If we are doing a single session,
+                    # there is no need to create an additional file.
+                    os.symlink(os.path.join(nt_src_dir, prv_list[0]), \
+                            os.path.join(nt_out_dir, pyp.CONCATENATED_EPOCHS_FILE))
             else:
                 print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
             
