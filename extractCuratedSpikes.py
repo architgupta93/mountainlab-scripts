@@ -17,9 +17,9 @@ ISOLATION_THRESHOLD      = 0.90
 PEAK_SNR_CUTOFF          = 3.0
 
 MODULE_IDENTIFIER        = "[AutoCuration] "
-FIRINGS_FILENAME         = 'firings_raw.mda'
-METRICS_FILENAME         = 'metrics_cleaned.json'
-OUTPUT_FILENAME          = 'firings_autocurated.mda'
+FIRINGS_FILENAME         = '/firings_raw.mda'
+METRICS_FILENAME         = '/metrics_cleaned.json'
+OUTPUT_FILENAME          = '/firings_autocurated.mda'
 def autocurate(firings_file, metrics_file, output_file):
     """
     Load raw firings from file and use metrics to automatically curate them.
@@ -89,8 +89,8 @@ if __name__ == "__main__":
         if not os.path.exists(out_nt_dir):
             print(MODULE_IDENTIFIER + "Output directory %s not found. Creating...")
             os.mkdir(out_nt_dir)
-        autocurate(os.path.join(data_dir, nt_dir, FIRINGS_FILENAME), \
-                os.path.join(data_dir, nt_dir, METRICS_FILENAME), \
-                os.path.join(output_dir, nt_dir, OUTPUT_FILENAME))
+        autocurate(os.path.join(data_dir, nt_dir + FIRINGS_FILENAME), \
+                os.path.join(data_dir, nt_dir + METRICS_FILENAME), \
+                os.path.join(output_dir, nt_dir + OUTPUT_FILENAME))
         print(MODULE_IDENTIFIER + "Finished %s"%nt_dir)
 

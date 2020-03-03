@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import logging
 import shutil
 import subprocess
@@ -11,6 +12,8 @@ import ms4_franklab_proc2py as p2p
 from distutils.dir_util import copy_tree
 from shutil import move
 from tkinter import Tk, filedialog
+
+import extractCuratedSpikes
 
 MODULE_IDENTIFIER = '[MS4Pipeline] '
 MDA_UTIL_FILENAME = 'mda_util.py'
@@ -78,6 +81,7 @@ def setup_NT_links(working_dir):
             if open_proc.poll() is None:
                 prv_creation_running = True
                 time.sleep(1)
+    print(MODULE_IDENTIFIER + "Finished creating PRVs.")
 
 def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True, clear_files=False):
     # Get the path for this file -> And then the directory in which this file
@@ -135,20 +139,33 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         mda_util.make_sure_path_exists(nt_out_dir)
 
         move_filt_mask_whiten_files = False
+        clear_raw_mda_file = False
+
+        # If auto-curated data is present, skip everything.
+        if os.path.isfile(nt_out_dir + extractCuratedSpikes.OUTPUT_FILENAME) and \
+                os.path.isfile(nt_out_dir + pyp.CLEAN_METRICS_FILE) and \
+                os.path.isfile(nt_out_dir + pyp.TEMPLATES_FILE):
+            print(MODULE_IDENTIFIER + "[%d] Found essential clustering files."%nt)
+            continue
+
         if (not os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)) or (not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME)):
             # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
             # save this to the output dir; it serves as src for subsequent steps
             prv_list=mda_util.get_prv_files_in(nt_src_dir)
             print('Concatenating Epochs: ' + ', '.join(prv_list))
 
-            if not os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE):
+            if not ((os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE)) or \
+                    (os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv'))):
                 if len(prv_list) > 1:
                     pyp.concat_eps(dataset_dir=nt_src_dir, output_dir=nt_out_dir, prv_list=prv_list)
+                    clear_raw_mda_file = True
                 else:
                     # UPDATE 2020-02-28: If we are doing a single session,
                     # there is no need to create an additional file.
+                    destination_prv_file = nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv'
+                    print(destination_prv_file)
                     os.symlink(os.path.join(nt_src_dir, prv_list[0]), \
-                            os.path.join(nt_out_dir, pyp.CONCATENATED_EPOCHS_FILE))
+                            destination_prv_file)
             else:
                 print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
             
@@ -156,18 +173,15 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
             if not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
                 pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                         mask_artifacts=do_mask_artifacts,opts={})
+                print(MODULE_IDENTIFIER + "Cleaning MASK file.")
+                mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
                 if clear_files:
-                    print(MODULE_IDENTIFIER + "Cleaning RAW, FILT, MASK files.")
-                    mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
-                    # Keeping FILT Files for later use.
-                    # mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
-                    if do_mask_artifacts:
-                        mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+                    if clear_raw_mda_file:
+                        print(MODULE_IDENTIFIER + "Cleaning concatenated RAW file.")
+                        mda_util.clear_mda(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE + '.prv')
+                    move_filt_mask_whiten_files = False
                 else:
-                    # mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
-                    if do_mask_artifacts:
-                        mda_util.relocate_mda(nt_out_dir + pyp.MASK_FILENAME, mountainlab_tmp_path)
-                move_filt_mask_whiten_files = True
+                    move_filt_mask_whiten_files = True
             else:
                 print(MODULE_IDENTIFIER + "Filt, Mask, Pre files with concatenated epochs found. Using file!")
         else:
@@ -191,30 +205,28 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
                     if move_filt_mask_whiten_files:
                         mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
                         mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+                    else:
+                        print(MODULE_IDENTIFIER + "Cleaning FILT, PRE files.")
+                        mda_util.clear_mda(nt_out_dir + pyp.PRE_FILENAME)
+                        mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
                     continue
             else:
                 print(MODULE_IDENTIFIER + "Firings and raw cluster metrics file with concatenated epochs found. Using file!")
 
-        """
-        if not os.path.isfile(nt_out_dir + pyp.TAGGED_METRICS_FILE):
-            pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
-        else:
-            print(MODULE_IDENTIFIER + "Tagged cluster metrics file with concatenated epochs found. Using file!")
-        """
+        # UPDATE 2020-03-03: Run auto-curation to extract clusters that do not
+        # look like noise. We can then extract spike waveforms for just these
+        # clusters.
+        pyp.cleanup_metrics(metrics_file=nt_out_dir + pyp.RAW_METRICS_FILE, \
+                metrics_out=nt_out_dir + '/metrics_cleaned.json')
+        extractCuratedSpikes.autocurate(nt_out_dir + extractCuratedSpikes.FIRINGS_FILENAME, \
+                nt_out_dir + extractCuratedSpikes.METRICS_FILENAME, \
+                nt_out_dir + extractCuratedSpikes.OUTPUT_FILENAME)
 
-        # 2020-02-21: There seems to be some issue with this step at the
-        # moment. Since we are going to do this in as automated a way as
-        # possible, might as well just go from raw metrics to cleaned metrics,
-        # skipping the metrics tagging step in between.
-        """
         if not os.path.isfile(nt_out_dir + pyp.CLIPS_FILE):
             pyp.extract_marks(dataset_dir=nt_out_dir,output_dir=nt_out_dir,opts={})
         else:
             print(MODULE_IDENTIFIER + "Clips file with concatenated epochs found. Using file!")
 
-        pyp.cleanup_metrics(metrics_file=nt_out_dir+'/metrics_tagged.json', metrics_out=nt_out_dir+'/metrics_cleaned.json')
-        """
-        pyp.cleanup_metrics(metrics_file=nt_out_dir+'/metrics_raw.json', metrics_out=nt_out_dir+'/metrics_cleaned.json')
         # Generate templates for MountainView - Use the filt file for generating templates.
         if not (os.path.isfile(nt_out_dir + pyp.TEMPLATES_FILE) and\
                 os.path.isfile(nt_out_dir + pyp.TEMPLATE_STDS_FILE)):
@@ -228,6 +240,10 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         if move_filt_mask_whiten_files:
             mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
             mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+        else:
+            print(MODULE_IDENTIFIER + "Cleaning FILT, PRE files.")
+            mda_util.clear_mda(nt_out_dir + pyp.PRE_FILENAME)
+            mda_util.clear_mda(nt_out_dir + pyp.FILT_FILENAME)
     print(MODULE_IDENTIFIER + "Sorting Complete!")
 
 if __name__ == "__main__":

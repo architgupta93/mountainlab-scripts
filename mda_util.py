@@ -19,7 +19,7 @@ def clear_mda(prv_file):
             prv_data = json.load(f)
         mda_path = prv_data['original_path']
         raw_filename = mda_path.split('/')[-1]
-        print('Copying MDA from %s.'%mda_path)
+        print('Removing MDA from %s.'%mda_path)
         os.remove(mda_path)
         os.remove(prv_file)
     except (FileNotFoundError, IOError) as err:

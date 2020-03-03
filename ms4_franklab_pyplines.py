@@ -1,10 +1,11 @@
-#from mountainlab_pytools import mdaio
+#%ntfrom mountainlab_pytools import mdaio
 #from mountainlab_pytools import mlproc as mlp
 import os
 import json
 import subprocess
 import ms4_franklab_proc2py as p2p
 import math
+import extractCuratedSpikes
 
 # This script calls the helper functions defined in p2p that in turn, call MS processors
 # This should be a collection of common processing steps that are standard across the lab, altho params can be changed flexibly
@@ -18,6 +19,7 @@ FILT_FILENAME = '/filt.mda.prv'
 MASK_FILENAME = '/mask.mda.prv'
 RAW_METRICS_FILE = '/metrics_raw.json'
 TAGGED_METRICS_FILE = '/metrics_tagged.json'
+CLEAN_METRICS_FILE = '/metrics_cleaned.json'
 TEMPLATES_FILE = '/templates.out'
 TEMPLATE_STDS_FILE = '/templates_stdev.out'
 AMPLITUDES_FILE = '/amplitudes.out'
@@ -244,8 +246,8 @@ def extract_clips(*,dataset_dir, output_dir, clip_size):
 def extract_marks(*,dataset_dir, output_dir, opts={}):
 
     p2p.pyms_extract_clips(
-        timeseries=dataset_dir+'/pre.mda.prv',
-        firings=dataset_dir+'/firings_raw.mda',
+        timeseries=dataset_dir+'/filt.mda.prv',
+        firings=dataset_dir+extractCuratedSpikes.OUTPUT_FILENAME,
         clips_out=output_dir+'/marks.mda',
         clip_size=1,
         opts=opts)
@@ -261,7 +263,7 @@ def generate_templates(*,dataset_dir,output_dir,metrics_file=None,opts={}):
         timeseries_mda = None
 
     p2p.generate_templates_and_amplitudes(
-        firings=dataset_dir+'/firings_raw.mda',
+        firings=dataset_dir+extractCuratedSpikes.FIRINGS_FILENAME,
         timeseries=timeseries_mda,
         stdevs_out=output_dir+TEMPLATE_STDS_FILE,
         templates_out=output_dir+TEMPLATES_FILE,
