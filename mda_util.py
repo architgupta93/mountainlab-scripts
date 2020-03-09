@@ -44,18 +44,6 @@ def relocate_mda(prv_file, target_directory):
         print('Unable to copy original MDA to output directory.')
         print(err)
 
-class MDAReallocator(threading.Thread):
-    """
-    MDA files are typically very large and moving them can be very time
-    consuming. We can initialize threads that take care of this file movement,
-    improving the overall runtime for our sorting. Since this is file IO, this
-    might also be suitable for python threading class.
-    """
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.daemon = True
-
 def get_prv_files_in(dataset_dir='./'):
     """
     Get all the prv files in the directory specified by dataset_dir

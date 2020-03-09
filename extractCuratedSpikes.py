@@ -15,6 +15,7 @@ PEAK_AMPLITUDE_LO_CUTOFF = 5.0      # MIN value of peak amplitude
 PEAK_AMPLITUDE_HI_CUTOFF = 100.0    # MAX value of peak amplitude (Handy for cleaning artifacts)
 ISOLATION_THRESHOLD      = 0.90
 PEAK_SNR_CUTOFF          = 3.0
+NOISE_OVERLAP_CUTOFF     = 0.25
 
 MODULE_IDENTIFIER        = "[AutoCuration] "
 FIRINGS_FILENAME         = '/firings_raw.mda'
@@ -38,7 +39,9 @@ def autocurate(firings_file, metrics_file, output_file):
     accepted_clusters = dict()
     for cluster in metrics['clusters']:
         accepted_clusters[cluster['label']] = False
-        if (cluster['metrics']['peak_amp'] is None) or (cluster['metrics']['peak_snr'] is None):
+        if (cluster['metrics']['peak_amp'] is None) or \
+                (cluster['metrics']['peak_snr'] is None) or \
+                (cluster['metrics']['noise_overlap'] is None):
             continue
 
         if (cluster['metrics']['peak_amp'] > PEAK_AMPLITUDE_HI_CUTOFF) or \
@@ -49,6 +52,9 @@ def autocurate(firings_file, metrics_file, output_file):
             continue
 
         if cluster['metrics']['peak_snr'] < PEAK_SNR_CUTOFF:
+            continue
+
+        if cluster['metrics']['noise_overlap'] > NOISE_OVERLAP_CUTOFF:
             continue
 
         # If none of the stuff above eats through the metrics, the cluster is accepted

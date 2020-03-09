@@ -75,6 +75,7 @@ def ms4alg(*,timeseries,geom,firings_out,detect_sign,adjacency_radius,detect_thr
     pp['detect_sign']=detect_sign
     pp['adjacency_radius']=adjacency_radius
     pp['detect_threshold']=detect_threshold
+    pp['num_workers'] = 10
     
     return mlp.runProcess(
         'ms4alg.sort',
