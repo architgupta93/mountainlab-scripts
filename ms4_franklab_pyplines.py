@@ -28,6 +28,19 @@ CLIPS_FILE = '/marks.mda'
 FIRINGS_FILENAME = '/firings_raw.mda'
 PRE_FILENAME = '/pre.mda.prv'
 
+def write_params_file(dataset_dir, output_dir):
+    # Parameters for reading the concatenated epochs
+    params = {}
+    params['samplerate'] = 30000
+    # Write a parameters file
+    try:
+        with open(output_dir + PARAMS_FILENAME, 'w') as fp:
+            json.dump(params, fp)
+        os.symlink(output_dir + PARAMS_FILENAME, dataset_dir + PARAMS_FILENAME)
+    except IOError as err:
+        print('ERROR: Unable to write parameter file.')
+        print(err)
+
 #before anything else, must concat all eps together becuase ms4 no longer handles the prv list of mdas
 def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
     strstart = []
@@ -48,17 +61,7 @@ def concat_eps(*,dataset_dir, output_dir, prv_list, opts={}):
     subprocess.call(['ml-run-process','ms3.concat_timeseries','--inputs', joined,'--outputs',outpath])
     print('Epochs concatenated into RAW MDA!')
     subprocess.call(['ml-prv-create', concatenated_mda_filename, concatenated_mda_filename + '.prv'])                    
-    # Parameters for reading the concatenated epochs
-    params = {}
-    params['samplerate'] = 30000
-    # Write a parameters file
-    try:
-        with open(output_dir + PARAMS_FILENAME, 'w') as fp:
-            json.dump(params, fp)
-        os.symlink(output_dir + PARAMS_FILENAME, dataset_dir + PARAMS_FILENAME)
-    except IOError as err:
-        print('ERROR: Unable to write parameter file.')
-        print(err)
+    write_params_file(dataset_dir, output_dir)
 
 def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_artifacts=True,opts={}):
     if not os.path.exists(output_dir):

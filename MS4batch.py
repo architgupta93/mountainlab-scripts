@@ -24,7 +24,7 @@ RAW_DIR_NAME      = '/raw'
 MOUNTAIN_DIR_NAME = '/mountain'
 ML_PRV_CREATOR    = 'ml-prv-create'
 ML_TMP_DIR        = '/tmp/mountainlab-tmp'
-N_WORKER_THREADS  = 4
+N_WORKER_THREADS  = 1
 
 def setup_NT_links(working_dir):
     """
@@ -94,10 +94,11 @@ class TetrodeProcessor(multiprocessing.Process):
     processing the raw waveforms, filtering and whitening them.
     """
 
-    def __init__(self, source_dir, target_dir, n_epochs_to_sort):
+    def __init__(self, source_dir, target_dir, n_epochs_to_sort, tmp_path):
         multiprocessing.Process.__init__(self, daemon=True)
         self._source_dir = source_dir
         self._target_dir = target_dir
+        self._tmp_path = tmp_path
         self._n_epochs = n_epochs_to_sort
         self._nt = 0
 
@@ -139,6 +140,7 @@ class TetrodeProcessor(multiprocessing.Process):
                     print(destination_prv_file)
                     os.symlink(os.path.join(nt_src_dir, prv_list[0]), \
                             destination_prv_file)
+                    pyp.write_params_file(nt_src_dir, nt_out_dir)
             else:
                 print(MODULE_IDENTIFIER + "Raw file with concatenated epochs found. Using file!")
             
@@ -176,8 +178,8 @@ class TetrodeProcessor(multiprocessing.Process):
                     print('ERROR: Unable to sort T%d.'%self._nt)
 
                     if move_filt_mask_whiten_files:
-                        mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
-                        mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+                        mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, self._tmp_path)
+                        mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, self._tmp_path)
                     else:
                         print(MODULE_IDENTIFIER + "Cleaning FILT, PRE files.")
                         mda_util.clear_mda(nt_out_dir + pyp.PRE_FILENAME)
@@ -211,8 +213,8 @@ class TetrodeProcessor(multiprocessing.Process):
             pyp.add_curation_tags(dataset_dir=nt_out_dir,output_dir=nt_out_dir, hand_curation=True)
 
         if move_filt_mask_whiten_files:
-            mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, mountainlab_tmp_path)
-            mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, mountainlab_tmp_path)
+            mda_util.relocate_mda(nt_out_dir + pyp.PRE_FILENAME, self._tmp_path)
+            mda_util.relocate_mda(nt_out_dir + pyp.FILT_FILENAME, self._tmp_path)
         else:
             print(MODULE_IDENTIFIER + "Cleaning FILT, PRE files.")
             mda_util.clear_mda(nt_out_dir + pyp.PRE_FILENAME)
@@ -272,7 +274,8 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
     worker_processes = list()
     for t_idx, nt in enumerate(tetrode_range):
         proc_id = t_idx % N_WORKER_THREADS
-        new_w_proc = TetrodeProcessor(mountain_src_path, mountain_res_path, n_epochs_to_sort)
+        new_w_proc = TetrodeProcessor(mountain_src_path, mountain_res_path, \
+                n_epochs_to_sort, mountainlab_tmp_path)
         new_w_proc.process(nt)
         worker_processes.append(new_w_proc)
 
