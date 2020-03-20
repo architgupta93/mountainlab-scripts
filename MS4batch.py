@@ -24,6 +24,8 @@ RAW_DIR_NAME      = '/raw'
 MOUNTAIN_DIR_NAME = '/mountain'
 ML_PRV_CREATOR    = 'ml-prv-create'
 ML_TMP_DIR        = '/tmp/mountainlab-tmp'
+
+PARALLELIZE_MDA_CREATION = False
 N_WORKER_THREADS  = 1
 
 def setup_NT_links(working_dir):
@@ -69,20 +71,23 @@ def setup_NT_links(working_dir):
 
             # UPDATE 2020-02-28: Was using a blocking subprocess.call to run
             # prv-creation. Switching to Popen which is non-blocking.
-            # subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
 
-            p = subprocess.Popen([ML_PRV_CREATOR, mda_file_path, output_file_path])
-            prv_creation_proc.append(p)
+            if PARALLELIZE_MDA_CREATION:
+                p = subprocess.Popen([ML_PRV_CREATOR, mda_file_path, output_file_path])
+            else:
+                p = subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
+                prv_creation_proc.append(p)
 
     # Make sure that all the processes have exitted before returning control to
     # parent function which will start processing PRV files.
-    prv_creation_running = True
-    while prv_creation_running:
-        prv_creation_running = False
-        for open_proc in prv_creation_proc:
-            if open_proc.poll() is None:
-                prv_creation_running = True
-                time.sleep(1)
+    if PARALLELIZE_MDA_CREATION:
+        prv_creation_running = True
+        while prv_creation_running:
+            prv_creation_running = False
+            for open_proc in prv_creation_proc:
+                if open_proc.poll() is None:
+                    prv_creation_running = True
+                    time.sleep(1)
     print(MODULE_IDENTIFIER + "Finished creating PRVs.")
 
 
