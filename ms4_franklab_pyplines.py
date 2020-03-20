@@ -105,7 +105,8 @@ def filt_mask_whiten(*,dataset_dir,output_dir,freq_min=300,freq_max=6000,mask_ar
 def ms4_sort_full(*,dataset_dir, output_dir, geom=[], adjacency_radius=-1,detect_threshold=3,detect_sign=0,opts={}):
 
     # Fetch dataset parameters
-    ds_params=p2p.read_dataset_params(dataset_dir)
+    # ds_params=p2p.read_dataset_params(dataset_dir)
+    ds_params=p2p.read_dataset_params(output_dir)
 
 
     p2p.ms4alg(

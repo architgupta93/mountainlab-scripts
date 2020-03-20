@@ -74,9 +74,9 @@ def setup_NT_links(working_dir):
 
             if PARALLELIZE_MDA_CREATION:
                 p = subprocess.Popen([ML_PRV_CREATOR, mda_file_path, output_file_path])
+                prv_creation_proc.append(p)
             else:
                 p = subprocess.call([ML_PRV_CREATOR, mda_file_path, output_file_path])
-                prv_creation_proc.append(p)
 
     # Make sure that all the processes have exitted before returning control to
     # parent function which will start processing PRV files.
