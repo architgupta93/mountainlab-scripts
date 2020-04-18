@@ -153,8 +153,10 @@ class TetrodeProcessor(multiprocessing.Process):
             if not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME):
                 pyp.filt_mask_whiten(dataset_dir=nt_out_dir,output_dir=nt_out_dir, freq_min=300,freq_max=6000, \
                         mask_artifacts=do_mask_artifacts,opts={})
-                print(MODULE_IDENTIFIER + "Cleaning MASK file.")
-                mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+                if do_mask_artifacts:
+                    print(MODULE_IDENTIFIER + "Cleaning MASK file.")
+                    mda_util.clear_mda(nt_out_dir + pyp.MASK_FILENAME)
+
                 if clear_files:
                     if clear_raw_mda_file:
                         print(MODULE_IDENTIFIER + "Cleaning concatenated RAW file.")
@@ -314,13 +316,14 @@ if __name__ == "__main__":
         print("Using root directory as start-point for MDA search.")
         initial_directory = '/'
 
-    do_mask_artifacts = True
+    do_mask_artifacts = False
     if commandline_args.mask_artifacts:
-        do_mask_artifacts = commandline_args.mask_artifacts
+        do_mask_artifacts = True
+    print(do_mask_artifacts)
 
     clear_files = False
     if commandline_args.clear_files:
-        clear_files = commandline_args.clear_files
+        clear_files = True
 
     tetrode_begin = 1
     tetrode_end = 64
