@@ -122,4 +122,9 @@ optional arguments:
 ```
 
 2. Running this should open up a window 
+
 ![MountainSortHelperViewer_TopLevelWindow.png]
+
+[https://github.com/architgupta93/mountainlab-scripts] Look below the file contents for a description on how to us e the data.
+
+## Working with MountainSort output
