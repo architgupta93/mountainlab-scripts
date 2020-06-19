@@ -44,7 +44,7 @@ The github page says that qt-mountainview is a temporary solution while they dev
     For both these packages, we need to change the system-path for it to work!
     Also the mountainlab package has changed to ml_pyms from pyms
 
-## Using the supplied sorting interface.
+## Using the command-line sorting interface.
 1. I recommend using the help functions to understand how the supplied scripts work. For example, if you run the following command, it should produce a set of commandline arguments that you can provide to run commandline sorting.
 
     $ python MS4batch.py --help
@@ -82,6 +82,44 @@ optional arguments:
                         stored
 ```
 
-3. If the step above produces python errors, it is very likely that you are missing some of the required libraries. Some of the commonly missing libraries include:
+The arguments help the script find 
+1. the correct data location for collecting raw data to be sorted (data-dir)
+2. Specifying where the output should be stored (output-dir, keep in mind that by default that the processing pipeline produces a LOT of data so you would want to specify a directory that has at least 2x-3x the space taken up by your raw recording -- See 5 for more details).
+3. Tetrode begin (the MDA files are organized post-extraction as nt1.mda, nt2.mda, ...). The tetrode-begin and tetrode-end parameters offer a crude solution for re-running sorting if the program crashes in between.
+4. Mask artifacts: specify an argument 1 if you want to mask out artifacts in the data.
+5. Clear files: By default, this pipeline would produce a LOT of files (filtered data, masked data, whitened data, spike waveforms etc.) This can take up a lot of space. For example, a 60 minute, 64 tetrode recording can blow up to over 600GB. Set this option to 1 if you want to use default options and not curate/merge clusters. This is usually OK if you are working with a single recoding. When merging multiple recordings, I would not recommend using this option.
 
-    
+# Troubleshooting MS4batch.py run failures
+If the step above produces python errors, it is very likely that you are missing some of the required libraries. Some of the commonly missing libraries include:
+
+## Using the graphical interface for sorting.
+1. In order to get an overview on how to run the grpahical interface for soriting, try running the helper function
+
+    $ python MLView.py --help
+
+```
+usage: MLView.py [-h] [--animal <animal-name>] [--date YYYYMMDD]
+                 [--data-dir <[MDA] data-directory>] [--raw <[npz] raw-data>]
+                 [--bayesian <[npz] decoded-data>]
+                 [--output-dir <output-directory>]
+
+Spike-Analysis Qt helper.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --animal <animal-name>
+                        Animal name
+  --date YYYYMMDD       Experiment date
+  --data-dir <[MDA] data-directory>
+                        Data directory from which MDA files should be read.
+  --raw <[npz] raw-data>
+                        Raw data to be imported as a numpy archive.
+  --bayesian <[npz] decoded-data>
+                        Decoded data to be imported as a numpy archive.
+  --output-dir <output-directory>
+                        Output directory where sorted spike data should be
+                        stored
+```
+
+2. Running this should open up a window 
+![MountainSortHelperViewer_TopLevelWindow.png]
