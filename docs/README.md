@@ -1,4 +1,4 @@
-## Instructions for setting up MountainLab (with trodes)
+## Instructions for setting up MountainSort (with trodes)
 1. Use conda for setting up a virtual environment
 
             $ conda create -n mountainlab
@@ -40,5 +40,48 @@ The github page says that qt-mountainview is a temporary solution while they dev
     and add these pacakges there. Try running the code MS4batch.py. 
 
                 ==== If running the code does not work as is ====
+
     For both these packages, we need to change the system-path for it to work!
     Also the mountainlab package has changed to ml_pyms from pyms
+
+## Using the supplied sorting interface.
+1. I recommend using the help functions to understand how the supplied scripts work. For example, if you run the following command, it should produce a set of commandline arguments that you can provide to run commandline sorting.
+
+    $ python MS4batch.py --help
+
+2. This should produce the following output:
+
+```
+usage: MS4batch.py [-h] [--animal <animal-name>]
+                   [--mask-artifacts <mask-artifacts>]
+                   [--clear-files <clear-files>]
+                   [--tetrode-begin <tetrode-begin>]
+                   [--tetrode-end <tetrode-end>] [--date YYYYMMDD]
+                   [--data-dir <[MDA] data-directory>]
+                   [--output-dir <output-directory>]
+
+MountainSort Batch Helper.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --animal <animal-name>
+                        Animal name
+  --mask-artifacts <mask-artifacts>
+                        Mark signal artifacts
+  --clear-files <clear-files>
+                        Clear additional files
+  --tetrode-begin <tetrode-begin>
+                        First tetrode to sort
+  --tetrode-end <tetrode-end>
+                        Last tetrode to sort
+  --date YYYYMMDD       Experiment date
+  --data-dir <[MDA] data-directory>
+                        Data directory from which MDA files should be read.
+  --output-dir <output-directory>
+                        Output directory where sorted spike data should be
+                        stored
+```
+
+3. If the step above produces python errors, it is very likely that you are missing some of the required libraries. Some of the commonly missing libraries include:
+
+    
