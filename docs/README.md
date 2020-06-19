@@ -10,7 +10,7 @@
             $ conda install -c flatiron -c conda-forge ml_ephys
             $ conda install -c flatiron -c conda-forge qt-mountainview ephys-viz
 
-2b. Install helper functions and other algorithms
+3. Install helper functions and other algorithms
 
             $ conda install -c flatiron -c conda-forge ml_ms3
             $ conda install -c flatiron -c conda-forge ml_pyms
@@ -18,16 +18,16 @@
 
 The github page says that qt-mountainview is a temporary solution while they develop ephys-viz (In case stuff stops working in the future).
 
-3. Test that the installation works by running their hello world process
+4. Test that the installation works by running their hello world process
 
             $ ml-run-process hello.world
 
-4. Time to do some spike sorting.
+5. Time to do some spike sorting.
     a. Generate MDA from the spike-gadgets .rec file
 
-    exportmda -rec <rec_file> -outputdirectory <output_dir>
+    $ exportmda -rec <rec_file> -outputdirectory <output_dir>
 
-5. To sort segments, you need to add a few packages too.
+6. To sort segments, you need to add a few packages too.
     a. franklab_mstaggedcuration
     b. franklab_msdrift
 
