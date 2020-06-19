@@ -63,23 +63,15 @@ usage: MS4batch.py [-h] [--animal <animal-name>]
 MountainSort Batch Helper.
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --animal <animal-name>
-                        Animal name
-  --mask-artifacts <mask-artifacts>
-                        Mark signal artifacts
-  --clear-files <clear-files>
-                        Clear additional files
-  --tetrode-begin <tetrode-begin>
-                        First tetrode to sort
-  --tetrode-end <tetrode-end>
-                        Last tetrode to sort
-  --date YYYYMMDD       Experiment date
-  --data-dir <[MDA] data-directory>
-                        Data directory from which MDA files should be read.
-  --output-dir <output-directory>
-                        Output directory where sorted spike data should be
-                        stored
+  -h, --help                        show this help message and exit
+  --animal <animal-name>            Animal name
+  --mask-artifacts <mask-artifacts> Mark signal artifacts
+  --clear-files <clear-files>       Clear additional files
+  --tetrode-begin <tetrode-begin>   First tetrode to sort
+  --tetrode-end <tetrode-end>       Last tetrode to sort
+  --date YYYYMMDD                   Experiment date
+  --data-dir <[MDA] data-directory> Data directory from which MDA files should be read.
+  --output-dir <output-directory>   Output directory where sorted spike data should be stored
 ```
 
 The arguments help the script find 
@@ -106,19 +98,13 @@ usage: MLView.py [-h] [--animal <animal-name>] [--date YYYYMMDD]
 Spike-Analysis Qt helper.
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --animal <animal-name>
-                        Animal name
-  --date YYYYMMDD       Experiment date
-  --data-dir <[MDA] data-directory>
-                        Data directory from which MDA files should be read.
-  --raw <[npz] raw-data>
-                        Raw data to be imported as a numpy archive.
-  --bayesian <[npz] decoded-data>
-                        Decoded data to be imported as a numpy archive.
-  --output-dir <output-directory>
-                        Output directory where sorted spike data should be
-                        stored
+  -h, --help                        show this help message and exit
+  --animal <animal-name>            Animal name
+  --date YYYYMMDD                   Experiment date
+  --data-dir <[MDA] data-directory> Data directory from which MDA files should be read.
+  --raw <[npz] raw-data>            Raw data to be imported as a numpy archive.
+  --bayesian <[npz] decoded-data>   Decoded data to be imported as a numpy archive.
+  --output-dir <output-directory>   Output directory where sorted spike data should be stored
 ```
 
 2. Running this should open up a window 
