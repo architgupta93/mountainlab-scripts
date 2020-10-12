@@ -44,6 +44,11 @@ The github page says that qt-mountainview is a temporary solution while they dev
     For both these packages, we need to change the system-path for it to work!
     Also the mountainlab package has changed to ml_pyms from pyms
 
+7. Download the scripts for running mountainsort from github. This can be done using the web interface on github.com, or from commandline by running
+            $ git clone https://github.com/architgupta93/mountainlab-scripts.git
+            
+8. Navigate to the directory where the scripts were cloned and follow the next set of instructions to cluster data.
+
 ## Using the command-line sorting interface.
 1. I recommend using the help functions to understand how the supplied scripts work. For example, if you run the following command, it should produce a set of commandline arguments that you can provide to run commandline sorting.
 
