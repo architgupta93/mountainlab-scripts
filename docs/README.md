@@ -1,4 +1,9 @@
 ## Instructions for setting up MountainSort (with trodes)
+
+NOTE: The current set of scripts work ONLY IN LINUX. If you are using some other operating systems, the scripts do not support it at the moment.
+
+0. If you don't have conda, I highly recommend installing conda first for managing environments. Follow the instructions on https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html to get started with a conda installation.
+
 1. Use conda for setting up a virtual environment
 
             $ conda create -n mountainlab
@@ -45,6 +50,7 @@ The github page says that qt-mountainview is a temporary solution while they dev
     Also the mountainlab package has changed to ml_pyms from pyms
 
 7. Download the scripts for running mountainsort from github. This can be done using the web interface on github.com, or from commandline by running
+
             $ git clone https://github.com/architgupta93/mountainlab-scripts.git
             
 8. Navigate to the directory where the scripts were cloned and follow the next set of instructions to cluster data.
