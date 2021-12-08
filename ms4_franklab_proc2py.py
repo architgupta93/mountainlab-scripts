@@ -177,9 +177,9 @@ def tagged_curation(*,cluster_metrics,metrics_tagged,firing_rate_thresh=.01, iso
         }
     )
 
-def get_epoch_offsets(*,dataset_dir, opts={}):
-
-    prv_list = mda_util.get_prv_files_in(dataset_dir)
+def get_epoch_offsets(*,dirnames, dataset_dir, opts={}):
+    # Caitlin added dirnames as an input to ensure correct ordering of prv files.
+    prv_list = mda_util.get_prv_files_in(dataset_dir,dirnames)
     ep_files = []
     for prv_file in prv_list:
         with open(dataset_dir + '/' + prv_file, 'r') as f:

@@ -121,7 +121,15 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
         if (not os.path.isfile(nt_out_dir + pyp.PRE_FILENAME)) or (not os.path.isfile(nt_out_dir + pyp.FILT_FILENAME)):
             # concatenate all eps, since ms4 no longer takes a list of mdas; save as raw.mda
             # save this to the output dir; it serves as src for subsequent steps
-            prv_list=mda_util.get_prv_files_in(nt_src_dir)
+
+
+            # 12/8/21: Caitlin Mallory: IMPORTANT BUG FIX!! the prv_list was being generated in a random order, instead of the order in which the epochs were specified.
+            # This resulted in epochs sometimes being concatentated in the wrong order. Changed mda_utils.get_prv_files_in to take the source_dirs as an input and ensure 
+            # that prv files are returned in the specified order.
+
+            prv_list=mda_util.get_prv_files_in(nt_src_dir,source_dirs)
+
+
             print('Concatenating Epochs: ' + ', '.join(prv_list))
 
             if not os.path.isfile(nt_out_dir + pyp.CONCATENATED_EPOCHS_FILE):
@@ -158,7 +166,8 @@ def run_pipeline(source_dirs, results_dir, tetrode_range, do_mask_artifacts=True
             if not (os.path.isfile(nt_out_dir + pyp.FIRINGS_FILENAME) and os.path.isfile(nt_out_dir + pyp.RAW_METRICS_FILE)):
                 try:
                     if n_epochs_to_sort > 1:
-                        pyp.ms4_sort_on_segs(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
+                        #Caitlin added dir_names as input
+                        pyp.ms4_sort_on_segs(dirnames=source_dirs, dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
                     else:
                         pyp.ms4_sort_full(dataset_dir=nt_src_dir,output_dir=nt_out_dir, adjacency_radius=-1,detect_threshold=3, detect_sign=-1, opts={})
                 except Exception as err:
@@ -236,7 +245,7 @@ if __name__ == "__main__":
     if commandline_args.clear_files:
         clear_files = commandline_args.clear_files
 
-    tetrode_begin = 1
+    tetrode_begin = 1 
     tetrode_end = 64
     if commandline_args.tetrode_begin:
         tetrode_begin = commandline_args.tetrode_begin

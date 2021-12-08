@@ -56,15 +56,36 @@ class MDAReallocator(threading.Thread):
         threading.Thread.__init__(self)
         self.daemon = True
 
-def get_prv_files_in(dataset_dir='./'):
+def get_prv_files_in(dataset_dir='./',dirnames=[]):
     """
-    Get all the prv files in the directory specified by dataset_dir
+    Get all the prv files in the directory specified by dataset_dir. Return them in the order specified by the source directory order!
     """
     prv_files = []
+    
+    if not dirnames:
+        raise Exception(MODULE_IDENTIFIER + "Warning: Epoch order not specified!")
+
+    epoch_prefix_list = []
+    for ep_idx, epdirmda in enumerate(dirnames):
+        all_files = os.listdir(epdirmda+'/')
+        for f in all_files:
+            if '.timestamps' in f:
+                epoch_prefix = f.split('.')[0]
+                epoch_prefix_list.append(epoch_prefix)
+    
+    if len(epoch_prefix_list) != len(dirnames):
+        raise Exception(MODULE_IDENTIFIER + "Incorrect number of prv files found")
+
+
     all_files = os.listdir(dataset_dir)
-    for f in all_files:
-        if f.endswith('.prv'):
-            prv_files.append(f)
+    for epoch_prefix in epoch_prefix_list:
+        for f in all_files:
+            if epoch_prefix in f and f.endswith('.prv'):
+                prv_files.append(f)
+
+    if len(prv_files) != len(dirnames):
+        raise Exception(MODULE_IDENTIFIER + "Incorrect number of prv files found")
+
     return prv_files
 
 def make_mda_ntrodeEpoch_links(dirnames=[], resdir=None):

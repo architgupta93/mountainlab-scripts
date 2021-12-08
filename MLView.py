@@ -652,7 +652,10 @@ class MLViewer(QMainWindow):
             QtHelperUtils.display_warning('Inappropriate MDA specified for sorting!')
             return
 
-        tetrode_range = range(1,65)
+        #tetrode_range = range(1,65)
+        #tetrode_range = (1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 23, 24, 25, \
+        #      26,27,28,29,30,31,32,33,34,35, 36,47,48,49,50,51, 52,53,54,55,56,57,59,61,62,63,64)     
+        tetrode_range = (6,7)
         do_mask_artifacts = True
         clear_files = True
         MS4batch.run_pipeline([epoch_mda_file], self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
@@ -677,7 +680,12 @@ class MLViewer(QMainWindow):
 
         # TODO: Create an input dialog that gets all these properties from the
         # user (dialog can also show all the directories that have been selected.)
-        tetrode_range = range(13,64)
+        
+        #tetrode_range = range(1,65)
+        #tetrode_range = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 23, 24, 25, \
+         #     26,27,28,29,30,31,32,33,34,35, 36,47,48,49,50,51, 52,53,54,55,56,57,59,61,62,63,64)      
+
+        tetrode_range = (6,7)
         do_mask_artifacts = True
         clear_files = True
         MS4batch.run_pipeline(mda_list, self.output_dir, tetrode_range, do_mask_artifacts, clear_files)
